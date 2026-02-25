@@ -1,0 +1,48 @@
+name: disaster_app
+description: "Disaster Management and Rescue App for Bangladesh"
+publish_to: "none"
+version: 1.0.0
+
+environment:
+  sdk: ^3.10.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Maps & Location
+  # flutter_map uses OpenStreetMap tiles – completely free, no API key needed.
+  # https://pub.dev/packages/flutter_map
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1 # LatLng type used by flutter_map
+  geolocator: ^13.0.2
+
+  # Networking
+  http: ^1.2.2
+
+  # State Management
+  provider: ^6.1.2
+
+  # URL Launcher (for SOS call & tel: links)
+  url_launcher: ^6.3.1
+
+  # Date / Time formatting
+  intl: ^0.20.2
+
+  # Cached network images (for weather icons)
+  cached_network_image: ^3.4.1
+
+  # Cupertino icons
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  # Add asset folders here if you later include local images / icons
+  # assets:
+  #   - assets/images/
