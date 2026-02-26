@@ -1,12 +1,12 @@
-/// Service that fetches weather data from the AccuWeather API.
-///
-/// Flow per fetch:
-///   1. Geoposition search  →  locationKey  (cached per lat/lon)
-///   2. Current Conditions  →  temp, wind, humidity, description
-///   3. 5-Day Daily Forecast → daily min/max, icon, rain
-///
-/// Falls back to realistic demo data when the API key is missing or any
-/// request fails.  AccuWeather free tier: 50 calls/day.
+// Service that fetches weather data from the AccuWeather API.
+//
+// Flow per fetch:
+//   1. Geoposition search  →  locationKey  (cached per lat/lon)
+//   2. Current Conditions  →  temp, wind, humidity, description
+//   3. 5-Day Daily Forecast → daily min/max, icon, rain
+//
+// Falls back to realistic demo data when the API key is missing or any
+// request fails.  AccuWeather free tier: 50 calls/day.
 
 import 'dart:convert';
 import 'package:flutter/material.dart';

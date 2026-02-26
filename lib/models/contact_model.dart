@@ -1,5 +1,5 @@
-/// Represents an emergency contact document from the Firestore "contacts"
-/// collection.  Contacts are filterable by division → district → upazila.
+// Represents an emergency contact document from the Firestore "contacts"
+// collection.  Contacts are filterable by division → district → upazila.
 
 class EmergencyContact {
   final String id;

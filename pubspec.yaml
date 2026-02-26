@@ -32,6 +32,12 @@ dependencies:
   # URL Launcher (for SOS call & tel: links)
   url_launcher: ^6.3.1
 
+  # Direct phone call without opening the dialer
+  flutter_phone_direct_caller: ^2.1.1
+
+  # Runtime permission requests (CALL_PHONE, SEND_SMS)
+  permission_handler: ^11.3.1
+
   # Date / Time formatting
   intl: ^0.20.2
 
@@ -40,6 +46,9 @@ dependencies:
 
   # Native splash (runtime remove call)
   flutter_native_splash: ^2.4.6
+
+  # Bengali font support
+  google_fonts: ^6.2.1
 
   # Cupertino icons
   cupertino_icons: ^1.0.8

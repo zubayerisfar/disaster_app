@@ -1,5 +1,5 @@
-/// Weather models parsed from the OpenWeatherMap One Call API response.
-/// Each [DayForecast] represents a single day in the 7-day forecast.
+// Weather models parsed from the OpenWeatherMap One Call API response.
+// Each [DayForecast] represents a single day in the 7-day forecast.
 
 class DayForecast {
   final DateTime date;

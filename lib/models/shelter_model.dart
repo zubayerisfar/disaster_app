@@ -1,6 +1,6 @@
-/// Represents a shelter (cyclone shelter / school) stored locally or from
-/// Firestore.  The [lat] and [lng] fields are used to place markers on
-/// the Google Map and to calculate distance from the user.
+// Represents a shelter (cyclone shelter / school) stored locally or from
+// Firestore.  The [lat] and [lng] fields are used to place markers on
+// the Google Map and to calculate distance from the user.
 
 class Shelter {
   final String id;

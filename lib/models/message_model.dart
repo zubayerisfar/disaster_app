@@ -1,5 +1,5 @@
-/// Represents an emergency message document stored in the Firestore
-/// "messages" collection. Fields mirror the Firestore schema.
+// Represents an emergency message document stored in the Firestore
+// "messages" collection. Fields mirror the Firestore schema.
 
 class EmergencyMessage {
   final String id;

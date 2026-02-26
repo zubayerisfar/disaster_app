@@ -1,6 +1,7 @@
 ﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/app_provider.dart';
@@ -13,6 +14,9 @@ import 'splash_screen.dart';
 import 'shelter_page.dart';
 import 'contacts_page.dart';
 import 'guidelines_page.dart';
+import 'volunteer_page.dart';
+import 'women_safety_page.dart';
+import 'widgets/app_drawer.dart';
 import 'widgets/family_info_form.dart';
 import 'services/family_info_service.dart';
 import 'services/notification_service.dart';
@@ -49,6 +53,7 @@ class DisasterApp extends StatelessWidget {
             brightness: Brightness.light,
           ),
           scaffoldBackgroundColor: const Color(0xFFF4F6FA),
+          textTheme: GoogleFonts.notoSerifBengaliTextTheme(),
         ),
         home: const SplashScreen(),
         routes: {'/home': (_) => const AppInitializer()},
@@ -116,28 +121,48 @@ class MainScaffold extends StatefulWidget {
 }
 
 class _MainScaffoldState extends State<MainScaffold> {
-  int _currentIndex = 0;
+  /// 0-3: bottom-nav pages, 4=Volunteer, 5=WomenSafety
+  int _pageIndex = 0;
+
+  /// 0-3 only — drives NavigationBar.selectedIndex
+  int _navIndex = 0;
+
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
   Timer? _clockTimer;
   final _notificationService = NotificationService();
 
-  final List<Widget> _pages = [
-    RepaintBoundary(child: HomePage()),
-    const RepaintBoundary(child: ShelterPage()),
-    const RepaintBoundary(child: ContactsPage()),
-    const RepaintBoundary(child: GuidelinesPage()),
-  ];
+  late final List<Widget> _pages;
+
+  void _openDrawer() => _scaffoldKey.currentState?.openDrawer();
+
+  void _onNavigate(int index) {
+    setState(() {
+      _pageIndex = index;
+      if (index <= 3) _navIndex = index;
+    });
+  }
 
   @override
   void initState() {
     super.initState();
+    _pages = [
+      RepaintBoundary(child: HomePage(onMenuTap: _openDrawer)),
+      RepaintBoundary(child: ShelterPage(onMenuTap: _openDrawer)),
+      RepaintBoundary(child: ContactsPage(onMenuTap: _openDrawer)),
+      RepaintBoundary(child: GuidelinesPage(onMenuTap: _openDrawer)),
+      RepaintBoundary(child: VolunteerPage(onMenuTap: _openDrawer)),
+      RepaintBoundary(child: WomenSafetyPage(onMenuTap: _openDrawer)),
+    ];
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _notificationService.initialize(context, _navigateToGuidelines);
+      if (!mounted) return;
       final app = context.read<AppProvider>();
       app.refreshDateTime();
       _loadAllData();
       app.fetchCurrentLocation().then((_) => _loadAllData());
 
       // Add listener to monitor warning level changes
+      if (!mounted) return;
       context.read<WeatherProvider>().addListener(_onWeatherChanged);
     });
     _clockTimer = Timer.periodic(const Duration(minutes: 1), (_) {
@@ -155,7 +180,10 @@ class _MainScaffoldState extends State<MainScaffold> {
   }
 
   void _navigateToGuidelines() {
-    setState(() => _currentIndex = 3);
+    setState(() {
+      _pageIndex = 3;
+      _navIndex = 3;
+    });
   }
 
   void _loadAllData() {
@@ -180,11 +208,16 @@ class _MainScaffoldState extends State<MainScaffold> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: const Color(0xFFF4F6FA),
-      body: IndexedStack(index: _currentIndex, children: _pages),
+      drawer: AppDrawer(currentIndex: _pageIndex, onNavigate: _onNavigate),
+      body: IndexedStack(index: _pageIndex, children: _pages),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (i) => setState(() => _currentIndex = i),
+        selectedIndex: _navIndex,
+        onDestinationSelected: (i) => setState(() {
+          _navIndex = i;
+          _pageIndex = i;
+        }),
         backgroundColor: Colors.white,
         indicatorColor: const Color(0xFFBBDEFB),
         surfaceTintColor: Colors.transparent,

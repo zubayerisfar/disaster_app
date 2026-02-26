@@ -1,8 +1,8 @@
-/// AppProvider manages shared app-level state: selected district, current
-/// location coordinates, and the date/time display string.
-///
-/// It is the single source of truth for location-dependent data loading;
-/// other providers listen for [selectedDistrict] changes and reload data.
+// AppProvider manages shared app-level state: selected district, current
+// location coordinates, and the date/time display string.
+//
+// It is the single source of truth for location-dependent data loading;
+// other providers listen for [selectedDistrict] changes and reload data.
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';

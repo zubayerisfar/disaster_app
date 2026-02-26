@@ -47,12 +47,12 @@ class _SignalAuraOverlayState extends State<SignalAuraOverlay>
     return IgnorePointer(
       child: AnimatedBuilder(
         animation: _ctrl,
-        builder: (_, __) {
+        builder: (ctx, child) {
           // Smooth breathing: opacity between 0.30 and 0.80
           final t = Curves.easeInOut.transform(_ctrl.value);
           final opacity = 0.30 + t * 0.50;
-          final glow = base.withOpacity(opacity);
-          final clear = base.withOpacity(0.0);
+          final glow = base.withValues(alpha: opacity);
+          final clear = base.withValues(alpha: 0.0);
           const edgeW = 64.0;
 
           return Stack(

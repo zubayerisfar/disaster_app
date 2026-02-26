@@ -1,9 +1,9 @@
-/// WeatherProvider fetches weather data from OpenWeatherMap and exposes it
-/// to the UI via ChangeNotifier.  It also computes the Bangladesh cyclone
-/// warning signal level from the current wind speed.
-///
-/// On creation, demo data is loaded immediately so the Home page is always
-/// populated, even before GPS or the real API responds.
+// WeatherProvider fetches weather data from OpenWeatherMap and exposes it
+// to the UI via ChangeNotifier.  It also computes the Bangladesh cyclone
+// warning signal level from the current wind speed.
+//
+// On creation, demo data is loaded immediately so the Home page is always
+// populated, even before GPS or the real API responds.
 
 import 'package:flutter/material.dart';
 import '../models/weather_model.dart';

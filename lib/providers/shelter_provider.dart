@@ -1,8 +1,8 @@
-/// ShelterProvider loads shelter data for the selected district and computes
-/// distances from the user's current location.
-///
-/// Demo shelters for Dhaka are pre-loaded on creation so the Shelters page
-/// is never blank.
+// ShelterProvider loads shelter data for the selected district and computes
+// distances from the user's current location.
+//
+// Demo shelters for Dhaka are pre-loaded on creation so the Shelters page
+// is never blank.
 
 import 'package:flutter/material.dart';
 import '../models/shelter_model.dart';
@@ -62,4 +62,14 @@ class ShelterProvider extends ChangeNotifier {
 
   double distanceTo(double userLat, double userLng, Shelter shelter) =>
       _service.distanceTo(userLat, userLng, shelter);
+
+  /// Adds a volunteer-submitted shelter to the current list and recomputes
+  /// the nearest shelters based on the last known user position.
+  void addShelter(Shelter shelter, double userLat, double userLng) {
+    // Prevent duplicate ids
+    _shelters.removeWhere((s) => s.id == shelter.id);
+    _shelters = [shelter, ..._shelters];
+    _nearest = _service.nearestShelters(userLat, userLng, _shelters);
+    notifyListeners();
+  }
 }

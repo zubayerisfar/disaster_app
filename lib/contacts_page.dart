@@ -9,7 +9,8 @@ import 'theme.dart';
 import 'widgets/disaster_app_bar.dart';
 
 class ContactsPage extends StatefulWidget {
-  const ContactsPage({super.key});
+  final VoidCallback? onMenuTap;
+  const ContactsPage({super.key, this.onMenuTap});
 
   @override
   State<ContactsPage> createState() => _ContactsPageState();
@@ -30,7 +31,11 @@ class _ContactsPageState extends State<ContactsPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
-      appBar: const DisasterAppBar(title: 'জরুরি যোগাযোগ'),
+      appBar: DisasterAppBar(
+        title: 'জরুরি যোগাযোগ',
+        showMenuButton: true,
+        onMenuTap: widget.onMenuTap,
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
         children: [

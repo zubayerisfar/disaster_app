@@ -1,5 +1,5 @@
-/// ContactProvider manages the cascading division → district → upazila
-/// dropdown state and loads matching contacts from Firestore.
+// ContactProvider manages the cascading division → district → upazila
+// dropdown state and loads matching contacts from Firestore.
 
 import 'package:flutter/material.dart';
 import '../models/contact_model.dart';

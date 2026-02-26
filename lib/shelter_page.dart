@@ -11,7 +11,8 @@ import 'theme.dart';
 import 'widgets/disaster_app_bar.dart';
 
 class ShelterPage extends StatefulWidget {
-  const ShelterPage({super.key});
+  final VoidCallback? onMenuTap;
+  const ShelterPage({super.key, this.onMenuTap});
 
   @override
   State<ShelterPage> createState() => _ShelterPageState();
@@ -294,7 +295,11 @@ class _ShelterPageState extends State<ShelterPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
-      appBar: const DisasterAppBar(title: 'আশ্রয়কেন্দ্র'),
+      appBar: DisasterAppBar(
+        title: 'আশ্রয়কেন্দ্র',
+        showMenuButton: true,
+        onMenuTap: widget.onMenuTap,
+      ),
       body: Column(
         children: [
           Expanded(

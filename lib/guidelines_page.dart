@@ -204,7 +204,8 @@ class _CategoryInfo {
 // ── Main page (card grid) ─────────────────────────────────────────────────────
 
 class GuidelinesPage extends StatelessWidget {
-  const GuidelinesPage({super.key});
+  final VoidCallback? onMenuTap;
+  const GuidelinesPage({super.key, this.onMenuTap});
 
   /// Opens the signal detail directly from any page (e.g. home).
   /// [signalLevel] 0 = safe/no signal; 1–10 = BMD warning signal.
@@ -289,7 +290,11 @@ class GuidelinesPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
-      appBar: const DisasterAppBar(title: 'নির্দেশিকা'),
+      appBar: DisasterAppBar(
+        title: 'নির্দেশিকা',
+        showMenuButton: true,
+        onMenuTap: onMenuTap,
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 20, 16, 36),
         children: [
