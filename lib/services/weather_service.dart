@@ -242,23 +242,29 @@ class WeatherService {
   // ---------------------------------------------------------------------------
 
   /// Maps a wind speed (km/h) to the Bangladesh Meteorological Department
-  /// cyclone warning signal number (1–10).
+  /// cyclone warning signal number (0 = no signal / safe, 1–10 = BMD signals).
   static int calculateWarningLevel(double windSpeedKmh) {
-    if (windSpeedKmh < 40) return 1;
-    if (windSpeedKmh < 51) return 3;
-    if (windSpeedKmh < 62) return 4;
-    if (windSpeedKmh < 89) return 6;
-    if (windSpeedKmh < 120) return 8;
-    return 10;
+    if (windSpeedKmh < 40) return 0; // Safe – no warning signal
+    if (windSpeedKmh < 51) return 1; // Signal 1 – distant caution  (40–50)
+    if (windSpeedKmh < 62) return 2; // Signal 2 – distant warning  (51–61)
+    if (windSpeedKmh < 71) return 4; // Signal 4 – local warning    (62–70)
+    if (windSpeedKmh < 81) return 5; // Signal 5 – danger           (71–80)
+    if (windSpeedKmh < 91) return 6; // Signal 6 – big danger       (81–90)
+    if (windSpeedKmh < 111) return 7; // Signal 7 – great danger    (91–110)
+    if (windSpeedKmh < 121) return 8; // Signal 8 – catastrophic    (111–120)
+    if (windSpeedKmh < 151) return 9; // Signal 9 – extreme         (121–150)
+    return 10; // Signal 10 – super-cyclone (≥151)
   }
 
-  /// Returns a short human-readable description for a given warning level.
+  /// Returns a short human-readable description for a given warning level
+  /// (0 = safe, 1–10 = BMD warning signals).
   static String warningDescription(int level) {
-    if (level <= 2) return 'Normal weather conditions.';
-    if (level == 3) return 'Squally weather. Wind 40–50 km/h.';
-    if (level == 4) return 'Cyclone possible. Wind 51–61 km/h.';
-    if (level <= 7) return 'Danger signal! Storm approaching. Wind 62–88 km/h.';
-    return 'GREAT DANGER! Severe cyclone. Wind ≥89 km/h.';
+    if (level == 0) return 'আবহাওয়া স্বাভাবিক। কোনো সংকেত নেই।';
+    if (level <= 2) return 'সাধারণ সতর্কতা। আবহাওয়ার খবর অনুসরণ করুন।';
+    if (level <= 4) return 'স্থানীয় হুঁশিয়ারি সংকেত। সতর্ক থাকুন।';
+    if (level <= 6) return 'বিপদ সংকেত! ঝড় আসছে। আশ্রয়ের প্রস্তুতি নিন।';
+    if (level <= 8) return 'মহাবিপদ সংকেত! অবিলম্বে আশ্রয়ে যান।';
+    return 'সর্বোচ্চ বিপদ! সুপার সাইক্লোন। বের হবেন না।';
   }
 
   /// Returns the background colour associated with a warning level.

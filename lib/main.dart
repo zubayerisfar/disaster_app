@@ -11,6 +11,9 @@ import 'home_page.dart';
 import 'shelter_page.dart';
 import 'contacts_page.dart';
 import 'guidelines_page.dart';
+import 'widgets/family_info_form.dart';
+import 'services/family_info_service.dart';
+import 'services/notification_service.dart';
 
 // Design tokens and GlassCard are in theme.dart
 
@@ -42,9 +45,60 @@ class DisasterApp extends StatelessWidget {
           ),
           scaffoldBackgroundColor: const Color(0xFFF4F6FA),
         ),
-        home: const MainScaffold(),
+        home: const AppInitializer(),
       ),
     );
+  }
+}
+
+class AppInitializer extends StatefulWidget {
+  const AppInitializer({super.key});
+
+  @override
+  State<AppInitializer> createState() => _AppInitializerState();
+}
+
+class _AppInitializerState extends State<AppInitializer> {
+  final _service = FamilyInfoService();
+  bool _hasInfo = false;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkFamilyInfo();
+  }
+
+  Future<void> _checkFamilyInfo() async {
+    final hasInfo = await _service.hasFamilyInfo();
+    if (mounted) {
+      setState(() {
+        _hasInfo = hasInfo;
+        _loading = false;
+      });
+    }
+  }
+
+  void _onFormComplete() {
+    setState(() => _hasInfo = true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFF4F6FA),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF1565C0)),
+        ),
+      );
+    }
+
+    if (!_hasInfo) {
+      return FamilyInfoForm(onComplete: _onFormComplete);
+    }
+
+    return const MainScaffold();
   }
 }
 
@@ -58,9 +112,8 @@ class MainScaffold extends StatefulWidget {
 class _MainScaffoldState extends State<MainScaffold> {
   int _currentIndex = 0;
   Timer? _clockTimer;
+  final _notificationService = NotificationService();
 
-  // Pages wrapped in RepaintBoundary once at static scope to avoid
-  // recreating the list on every build() call.
   static final List<Widget> _pages = [
     const RepaintBoundary(child: HomePage()),
     const RepaintBoundary(child: ShelterPage()),
@@ -72,14 +125,28 @@ class _MainScaffoldState extends State<MainScaffold> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _notificationService.initialize(context, _navigateToGuidelines);
       final app = context.read<AppProvider>();
       app.refreshDateTime();
       _loadAllData();
       app.fetchCurrentLocation().then((_) => _loadAllData());
+
+      // Add listener to monitor warning level changes
+      context.read<WeatherProvider>().addListener(_onWeatherChanged);
     });
     _clockTimer = Timer.periodic(const Duration(minutes: 1), (_) {
       if (mounted) context.read<AppProvider>().refreshDateTime();
     });
+  }
+
+  void _onWeatherChanged() {
+    if (!mounted) return;
+    final weatherProvider = context.read<WeatherProvider>();
+    _notificationService.checkWarningLevel(weatherProvider);
+  }
+
+  void _navigateToGuidelines() {
+    setState(() => _currentIndex = 3);
   }
 
   void _loadAllData() {
@@ -96,6 +163,8 @@ class _MainScaffoldState extends State<MainScaffold> {
   @override
   void dispose() {
     _clockTimer?.cancel();
+    context.read<WeatherProvider>().removeListener(_onWeatherChanged);
+    _notificationService.dispose();
     super.dispose();
   }
 
@@ -117,22 +186,22 @@ class _MainScaffoldState extends State<MainScaffold> {
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home, color: Color(0xFF1565C0)),
-            label: 'Home',
+            label: 'হোম',
           ),
           NavigationDestination(
             icon: Icon(Icons.location_city_outlined),
             selectedIcon: Icon(Icons.location_city, color: Color(0xFF1565C0)),
-            label: 'Shelters',
+            label: 'আশ্রয়কেন্দ্র',
           ),
           NavigationDestination(
             icon: Icon(Icons.contacts_outlined),
             selectedIcon: Icon(Icons.contacts, color: Color(0xFF1565C0)),
-            label: 'Contacts',
+            label: 'যোগাযোগ',
           ),
           NavigationDestination(
             icon: Icon(Icons.menu_book_outlined),
             selectedIcon: Icon(Icons.menu_book, color: Color(0xFF1565C0)),
-            label: 'Guidelines',
+            label: 'নির্দেশিকা',
           ),
         ],
       ),

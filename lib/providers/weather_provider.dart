@@ -31,6 +31,12 @@ class WeatherProvider extends ChangeNotifier {
       WeatherService.warningDescription(_warningLevel);
   int get warningColor => WeatherService.warningColor(_warningLevel);
 
+  /// For testing only — force a specific warning level without real wind data.
+  void setDebugWarningLevel(int level) {
+    _warningLevel = level;
+    notifyListeners();
+  }
+
   /// Loads demo weather immediately (synchronously via service static method).
   void _loadDemoImmediately() {
     _weatherData = WeatherService.getDemoData();

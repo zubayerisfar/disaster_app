@@ -30,12 +30,12 @@ class _ContactsPageState extends State<ContactsPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
-      appBar: const DisasterAppBar(title: 'Emergency Contacts'),
+      appBar: const DisasterAppBar(title: 'জরুরি যোগাযোগ'),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
         children: [
           _PanelHeader(
-            title: 'National Emergency Numbers',
+            title: 'জাতীয় জরুরি নম্বর',
             icon: Icons.phone_in_talk_outlined,
           ),
           const SizedBox(height: 10),
@@ -45,13 +45,13 @@ class _ContactsPageState extends State<ContactsPage> {
           const SizedBox(height: 24),
 
           _PanelHeader(
-            title: 'Find Local Contacts',
+            title: 'স্থানীয় যোগাযোগ খুঁজুন',
             icon: Icons.search_outlined,
           ),
           const SizedBox(height: 10),
 
           _GlassDropdown(
-            label: 'Division',
+            label: 'বিভাগ',
             isLoading: cp.isLoadingDivisions,
             items: cp.divisions,
             value: cp.selectedDivision,
@@ -62,7 +62,7 @@ class _ContactsPageState extends State<ContactsPage> {
           const SizedBox(height: 10),
 
           _GlassDropdown(
-            label: 'District',
+            label: 'জেলা',
             isLoading: cp.isLoadingDistricts,
             items: cp.districts,
             value: cp.selectedDistrict,
@@ -74,7 +74,7 @@ class _ContactsPageState extends State<ContactsPage> {
           const SizedBox(height: 10),
 
           _GlassDropdown(
-            label: 'Sub-District (Upazila)',
+            label: 'উপজেলা',
             isLoading: cp.isLoadingUpazilas,
             items: cp.upazilas,
             value: cp.selectedUpazila,
@@ -93,8 +93,8 @@ class _ContactsPageState extends State<ContactsPage> {
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 12),
               child: Text(
-                'No contacts found for this area.',
-                style: TextStyle(color: Colors.white60),
+                'এই এলাকার জন্য কোনো যোগাযোগ পাওয়া যায়নি।',
+                style: TextStyle(color: Colors.black54, fontSize: 13),
               ),
             )
           else if (cp.contacts.isEmpty)
@@ -107,7 +107,7 @@ class _ContactsPageState extends State<ContactsPage> {
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Select division, district, and sub-district to see local emergency contacts.',
+                      'স্থানীয় জরুরি যোগাযোগ দেখতে বিভাগ, জেলা ও উপজেলা নির্বাচন করুন।',
                       style: TextStyle(color: Colors.black54, fontSize: 13),
                     ),
                   ),
@@ -200,7 +200,7 @@ class _GlassDropdown extends StatelessWidget {
                       (d) => DropdownMenuItem(
                         value: d,
                         child: Text(
-                          d,
+                          _translateLocationName(d),
                           style: const TextStyle(
                             color: Color(0xFF0D1B2A),
                             fontSize: 13,
@@ -388,4 +388,22 @@ class _ContactCard extends StatelessWidget {
     final uri = Uri.parse('tel:$number');
     if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
+}
+
+/// Helper function to translate location names (divisions, districts, upazilas) to Bangla
+String _translateLocationName(String name) {
+  // Try division translation first
+  if (ContactService.divisionsBangla.containsKey(name)) {
+    return ContactService.divisionsBangla[name]!;
+  }
+  // Try district translation
+  if (ContactService.districtsBangla.containsKey(name)) {
+    return ContactService.districtsBangla[name]!;
+  }
+  // Try upazila translation
+  if (ContactService.upazilasBangla.containsKey(name)) {
+    return ContactService.upazilasBangla[name]!;
+  }
+  // Return original name if no translation found
+  return name;
 }

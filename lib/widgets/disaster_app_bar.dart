@@ -55,7 +55,9 @@ class DisasterAppBar extends StatelessWidget implements PreferredSizeWidget {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              app.selectedDistrict,
+                              AppProvider.districtNamesBangla[app
+                                      .selectedDistrict] ??
+                                  app.selectedDistrict,
                               style: const TextStyle(
                                 color: Color(0xFF0D1B2A),
                                 fontWeight: FontWeight.bold,
@@ -101,12 +103,12 @@ class DisasterAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ),
                     child: const Center(
                       child: Text(
-                        'SOS',
+                        'জরুরি',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w900,
                           fontSize: 16,
-                          letterSpacing: 2,
+                          letterSpacing: 1,
                         ),
                       ),
                     ),
@@ -184,7 +186,7 @@ class DisasterAppBar extends StatelessWidget implements PreferredSizeWidget {
                         vertical: 2,
                       ),
                       title: Text(
-                        d,
+                        AppProvider.districtNamesBangla[d] ?? d,
                         style: TextStyle(
                           fontWeight: selected
                               ? FontWeight.bold

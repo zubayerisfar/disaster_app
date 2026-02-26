@@ -10,8 +10,8 @@ import 'providers/app_provider.dart';
 import 'providers/shelter_provider.dart';
 import 'providers/weather_provider.dart';
 import 'services/contact_service.dart';
-import 'services/weather_service.dart';
 import 'theme.dart';
+import 'guidelines_page.dart';
 import 'widgets/disaster_app_bar.dart';
 
 class HomePage extends StatelessWidget {
@@ -21,7 +21,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
-      appBar: const DisasterAppBar(title: 'Home'),
+      appBar: const DisasterAppBar(title: 'আমার এলাকা'),
       body: RefreshIndicator(
         color: Colors.white,
         backgroundColor: const Color(0xFF1E88E5),
@@ -43,21 +43,21 @@ class HomePage extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 20, 16, 52),
           children: const [
             _WeatherHeroCard(),
-            SizedBox(height: 26),
+            SizedBox(height: 28),
             _ForecastStrip(),
-            SizedBox(height: 30),
+            SizedBox(height: 32),
             _SectionHeader(
-              title: 'Nearest Shelters',
-              icon: Icons.location_city_outlined,
+              title: 'কাছের আশ্রয়কেন্দ্র',
+              icon: Icons.shield_outlined,
             ),
-            SizedBox(height: 12),
+            SizedBox(height: 14),
             _NearestShelters(),
-            SizedBox(height: 30),
+            SizedBox(height: 32),
             _SectionHeader(
-              title: 'Emergency Numbers',
-              icon: Icons.phone_in_talk_outlined,
+              title: 'জরুরি নম্বর',
+              icon: Icons.phone_in_talk_rounded,
             ),
-            SizedBox(height: 12),
+            SizedBox(height: 14),
             _EmergencyContacts(),
           ],
         ),
@@ -74,13 +74,23 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Icon(icon, size: 20, color: const Color(0xFF1565C0)),
+        Container(
+          width: 5,
+          height: 28,
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A3A6B),
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Icon(icon, size: 24, color: const Color(0xFF1A3A6B)),
         const SizedBox(width: 10),
         Text(
           title,
           style: const TextStyle(
-            fontSize: 18,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
             color: Color(0xFF0D1B2A),
           ),
@@ -94,71 +104,96 @@ class _SectionHeader extends StatelessWidget {
 class _WeatherHeroCard extends StatelessWidget {
   const _WeatherHeroCard();
 
-  // ── Alert data keyed by warning level (1–10) ────────────────────────────
+  // Bangla numerals for signal levels 0–10
+  static const _bn = [
+    '✓', // 0 – safe
+    '১', '২', '৩', '৪', '৫',
+    '৬', '৭', '৮', '৯', '১০',
+  ];
+
+  // ── Alert data: index 0 = safe, index 1–10 = BMD signals 1–10 ────────────
   static const _alerts = [
+    // index 0 – নিরাপদ
     (
-      icon: Icons.check_circle_outline,
-      title: 'All Clear',
+      icon: Icons.check_circle_rounded,
+      title: 'আবহাওয়া স্বাভাবিক',
       quote:
-          'Weather conditions are normal. Stay informed and keep emergency contacts handy.',
+          'কোনো সংকেত নেই। আবহাওয়া শান্ত আছে। নিরাপদে থাকুন এবং জরুরি নম্বর সংগ্রহে রাখুন।',
     ),
+    // index 1 – ১ নম্বর সংকেত
     (
       icon: Icons.info_outline,
-      title: 'Stay Alert',
+      title: '১ নম্বর সংকেত — দূরবর্তী সতর্ক সংকেত',
       quote:
-          'Minor weather disturbance possible. Monitor Bangladesh Meteorological Department updates.',
+          'সমুদ্রে নিম্নচাপ সৃষ্টি হয়েছে। আবহাওয়ার খবর শুনুন ও সকলকে সতর্ক থাকতে জানান।',
     ),
+    // index 2 – ২ নম্বর সংকেত
+    (
+      icon: Icons.info_outline,
+      title: '২ নম্বর সংকেত — দূরবর্তী হুঁশিয়ারি',
+      quote:
+          'নিম্নচাপ শক্তিশালী হচ্ছে। জরুরি খাদ্য ও পানি প্রস্তুত রাখুন। মোবাইল চার্জ রাখুন।',
+    ),
+    // index 3 – ৩ নম্বর সংকেত
     (
       icon: Icons.warning_amber_outlined,
-      title: 'Squally Weather',
+      title: '৩ নম্বর সংকেত — স্থানীয় সতর্ক সংকেত',
       quote:
-          'Gusty winds up to 50 km/h expected. Secure loose objects and avoid open water.',
+          'স্থানীয় ঝড় আঘাত করতে পারে। ঘরের দরজা-জানালা শক্ত করুন। অপ্রয়োজনে বাইরে যাবেন না।',
     ),
+    // index 4 – ৪ নম্বর সংকেত
     (
       icon: Icons.warning_amber_outlined,
-      title: 'Cyclone Possible',
+      title: '৪ নম্বর সংকেত — স্থানীয় হুঁশিয়ারি',
       quote:
-          'A cyclone may be forming nearby. Identify your nearest shelter and prepare emergency supplies.',
+          'বন্দর এলাকায় ঝড় আঘাত হানতে পারে। আশ্রয়কেন্দ্র চিহ্নিত করুন। গুরুত্বপূর্ণ কাগজ নিরাপদে রাখুন।',
     ),
+    // index 5 – ৫ নম্বর সংকেত
     (
       icon: Icons.dangerous_outlined,
-      title: 'Danger Signal',
+      title: '৫ নম্বর সংকেত — বিপদ সংকেত',
       quote:
-          'Storm is approaching. Move away from low-lying areas. Be ready to evacuate on short notice.',
+          'মাঝারি ঘূর্ণিঝড়। আশ্রয়কেন্দ্রে যাওয়ার প্রস্তুতি নিন। শুকনো খাবার ও পানি সংগ্রহ করুন।',
     ),
+    // index 6 – ৬ নম্বর সংকেত
     (
       icon: Icons.dangerous_outlined,
-      title: 'Danger Signal',
+      title: '৬ নম্বর সংকেত — বড় বিপদ সংকেত',
       quote:
-          'Strong storm with destructive winds. Move to a sturdy cyclone shelter immediately.',
+          'শক্তিশালী ঘূর্ণিঝড়। নিচু এলাকা এখনই ত্যাগ করুন। আশ্রয়কেন্দ্রে যাওয়া শুরু করুন।',
     ),
+    // index 7 – ৭ নম্বর সংকেত
     (
       icon: Icons.crisis_alert,
-      title: 'Great Danger',
+      title: '৭ নম্বর সংকেত — অতি বিপদ সংকেত',
       quote:
-          'Extremely dangerous cyclone approaching. Evacuate to the nearest shelter NOW. Do not delay.',
+          'প্রবল ঘূর্ণিঝড় ও জলোচ্ছ্বাসের আশঙ্কা। সবাই এখনই আশ্রয়কেন্দ্রে যান। দেরি করবেন না।',
     ),
+    // index 8 – ৮ নম্বর সংকেত
     (
       icon: Icons.crisis_alert,
-      title: 'Great Danger',
+      title: '৮ নম্বর সংকেত — মহাবিপদ সংকেত',
       quote:
-          'Severe cyclone imminent. Seek shelter immediately. Stay away from windows and flood-prone areas.',
+          'মারাত্মক ঘূর্ণিঝড় ও বড় জলোচ্ছ্বাস। অবিলম্বে আশ্রয়কেন্দ্রে যান। জানালা থেকে দূরে থাকুন।',
     ),
+    // index 9 – ৯ নম্বর সংকেত
     (
       icon: Icons.crisis_alert,
-      title: 'Catastrophic Risk',
+      title: '৯ নম্বর সংকেত — চরম মহাবিপদ',
       quote:
-          'Catastrophic storm. Follow all evacuation orders without hesitation. Your life is at risk.',
+          'অত্যন্ত ভয়ংকর ঘূর্ণিঝড়। বাইরে যাওয়া সম্পূর্ণ নিষেধ। আশ্রয়েই থাকুন।',
     ),
+    // index 10 – ১০ নম্বর সংকেত
     (
       icon: Icons.crisis_alert,
-      title: 'Maximum Alert',
+      title: '১০ নম্বর সংকেত — সর্বোচ্চ মহাবিপদ',
       quote:
-          'MAXIMUM DANGER. Catastrophic cyclone with violent winds. Remain in shelter — do NOT venture outside.',
+          'সুপার সাইক্লোন — ব্যাপক ধ্বংস। আশ্রয়কেন্দ্রে থাকুন। ঝড় পুরোপুরি শেষ না হওয়া পর্যন্ত বের হবেন না।',
     ),
   ];
 
   Color _lc(int level) {
+    if (level == 0) return Colors.greenAccent.shade400;
     if (level <= 2) return Colors.greenAccent.shade400;
     if (level <= 4) return Colors.orange.shade300;
     if (level <= 7) return Colors.deepOrange.shade300;
@@ -166,6 +201,7 @@ class _WeatherHeroCard extends StatelessWidget {
   }
 
   Color _alertAccent(int level) {
+    if (level == 0) return const Color(0xFF2E7D32);
     if (level <= 2) return const Color(0xFF2E7D32);
     if (level <= 4) return const Color(0xFFF57F17);
     if (level <= 7) return const Color(0xFFE65100);
@@ -173,6 +209,7 @@ class _WeatherHeroCard extends StatelessWidget {
   }
 
   Color _alertBg(int level) {
+    if (level == 0) return const Color(0xFFE8F5E9);
     if (level <= 2) return const Color(0xFFE8F5E9);
     if (level <= 4) return const Color(0xFFFFF8E1);
     if (level <= 7) return const Color(0xFFFFF3E0);
@@ -182,11 +219,11 @@ class _WeatherHeroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final wp = context.watch<WeatherProvider>();
-    final level = wp.warningLevel;
+    final level = 8;
     final lc = _lc(level);
     final accent = _alertAccent(level);
     final bg = _alertBg(level);
-    final alert = _alerts[(level - 1).clamp(0, 9)];
+    final alert = _alerts[level.clamp(0, 10)];
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
@@ -210,12 +247,12 @@ class _WeatherHeroCard extends StatelessWidget {
             Container(
               width: double.infinity,
               color: bg,
-              padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(alert.icon, color: accent, size: 26),
-                  const SizedBox(width: 12),
+                  Icon(alert.icon, color: accent, size: 30),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -223,19 +260,19 @@ class _WeatherHeroCard extends StatelessWidget {
                         Text(
                           alert.title,
                           style: TextStyle(
-                            fontSize: 15,
+                            fontSize: 17,
                             fontWeight: FontWeight.w800,
                             color: accent,
-                            letterSpacing: 0.2,
+                            height: 1.3,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                         Text(
                           alert.quote,
                           style: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF37474F),
-                            height: 1.5,
+                            fontSize: 15,
+                            color: Color(0xFF263238),
+                            height: 1.6,
                           ),
                         ),
                       ],
@@ -261,47 +298,71 @@ class _WeatherHeroCard extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Signal panel
-                      Container(
-                        width: 126,
-                        padding: const EdgeInsets.fromLTRB(14, 14, 10, 16),
-                        decoration: BoxDecoration(
-                          color: lc.withValues(alpha: 0.1),
+                      // Signal panel – tappable to view detailed guidelines
+                      Material(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(14),
+                        child: InkWell(
                           borderRadius: BorderRadius.circular(14),
-                          border: Border(left: BorderSide(color: lc, width: 5)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'SIGNAL',
-                              style: TextStyle(
-                                fontSize: 10,
-                                letterSpacing: 2.5,
-                                fontWeight: FontWeight.w800,
-                                color: lc,
+                          onTap: () =>
+                              GuidelinesPage.openSignalPage(context, level),
+                          child: Container(
+                            width: 126,
+                            padding: const EdgeInsets.fromLTRB(14, 14, 10, 16),
+                            decoration: BoxDecoration(
+                              color: lc.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border(
+                                left: BorderSide(color: lc, width: 5),
                               ),
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '$level',
-                              style: TextStyle(
-                                fontSize: 64,
-                                fontWeight: FontWeight.w900,
-                                color: lc,
-                                height: 1.0,
-                              ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      level == 0 ? 'নিরাপদ' : 'সংকেত',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        letterSpacing: 0.5,
+                                        fontWeight: FontWeight.w800,
+                                        color: lc,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Icon(
+                                      Icons.arrow_forward_ios_rounded,
+                                      size: 10,
+                                      color: lc.withValues(alpha: 0.7),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _bn[level.clamp(0, 10)],
+                                  style: TextStyle(
+                                    fontSize: 60,
+                                    fontWeight: FontWeight.w900,
+                                    color: lc,
+                                    height: 1.05,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  level == 0
+                                      ? 'কোনো সংকেত নেই'
+                                      : 'বিস্তারিত দেখতে চাপুন',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: lc.withValues(alpha: 0.8),
+                                    height: 1.4,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              WeatherService.warningDescription(level),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.black54,
-                                height: 1.4,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
 
@@ -371,25 +432,29 @@ class _WeatherHeroCard extends StatelessWidget {
                                     .toUpperCase(),
                                 style: const TextStyle(
                                   color: Colors.black45,
-                                  fontSize: 13,
-                                  letterSpacing: 1.4,
+                                  fontSize: 14,
+                                  letterSpacing: 1.2,
                                 ),
                               ),
-                              const SizedBox(height: 14),
+                              const SizedBox(height: 16),
                               Row(
                                 children: [
-                                  _Stat(
-                                    icon: Icons.air,
-                                    value:
-                                        '${wp.weatherData!.currentWindSpeed.round()} km/h',
-                                    label: 'Wind',
+                                  Flexible(
+                                    child: _Stat(
+                                      icon: Icons.air_rounded,
+                                      value:
+                                          '${wp.weatherData!.currentWindSpeed.round()} কিমি/ঘন্টা',
+                                      label: 'বাতাস',
+                                    ),
                                   ),
-                                  const SizedBox(width: 20),
-                                  _Stat(
-                                    icon: Icons.water_drop_outlined,
-                                    value:
-                                        '${wp.weatherData!.currentHumidity.round()}%',
-                                    label: 'Humidity',
+                                  const SizedBox(width: 14),
+                                  Flexible(
+                                    child: _Stat(
+                                      icon: Icons.water_drop_rounded,
+                                      value:
+                                          '${wp.weatherData!.currentHumidity.round()}%',
+                                      label: 'আর্দ্রতা',
+                                    ),
                                   ),
                                 ],
                               ),
@@ -429,25 +494,29 @@ class _Stat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Icon(icon, color: Colors.black54, size: 22),
-        const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              value,
-              style: const TextStyle(
-                color: Color(0xFF0D1B2A),
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
+        Icon(icon, color: const Color(0xFF1A3A6B), size: 22),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  color: Color(0xFF0D1B2A),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+                softWrap: true,
               ),
-            ),
-            Text(
-              label,
-              style: const TextStyle(color: Colors.black54, fontSize: 12),
-            ),
-          ],
+              Text(
+                label,
+                style: const TextStyle(color: Colors.black45, fontSize: 12),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -466,7 +535,7 @@ class _ForecastStrip extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const _SectionHeader(
-          title: '7-Day Forecast',
+          title: '৭ দিনের আবহাওয়া',
           icon: Icons.calendar_today_outlined,
         ),
         const SizedBox(height: 12),
@@ -475,15 +544,15 @@ class _ForecastStrip extends StatelessWidget {
           const LinearProgressIndicator(color: Color(0xFF1565C0))
         else if (wp.weatherData == null || wp.weatherData!.daily.isEmpty)
           const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
+            padding: EdgeInsets.symmetric(vertical: 14),
             child: Text(
-              'No forecast available.',
-              style: TextStyle(color: Colors.black54),
+              'পূর্বাভাস পাওয়া যাচ্ছে না।',
+              style: TextStyle(color: Colors.black54, fontSize: 15),
             ),
           )
         else
           SizedBox(
-            height: 134,
+            height: 178,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: wp.weatherData!.daily.length,
@@ -501,42 +570,78 @@ class _ForecastCard extends StatelessWidget {
   final DayForecast day;
   const _ForecastCard({required this.day});
 
+  static const _banglaDay = {
+    'Mon': 'সোম',
+    'Tue': 'মঙ্গল',
+    'Wed': 'বুধ',
+    'Thu': 'বৃহ',
+    'Fri': 'শুক্র',
+    'Sat': 'শনি',
+    'Sun': 'রবি',
+  };
+
   @override
   Widget build(BuildContext context) {
+    final eng = DateFormat('EEE').format(day.date);
+    final bn = _banglaDay[eng] ?? eng;
     return GlassCard(
       borderRadius: BorderRadius.circular(14),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       child: SizedBox(
-        width: 82,
+        width: 100,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              DateFormat('EEE').format(day.date),
+              bn,
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
-                fontSize: 13,
+                fontSize: 15,
                 color: Color(0xFF0D1B2A),
               ),
             ),
             CachedNetworkImage(
               imageUrl: day.iconUrl,
-              width: 40,
-              height: 40,
+              width: 44,
+              height: 44,
               errorWidget: (_, _, _) =>
-                  const Icon(Icons.cloud, size: 32, color: Colors.grey),
+                  const Icon(Icons.cloud, size: 36, color: Colors.grey),
             ),
-            Text(
-              '${day.tempMax.round()}°',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: Color(0xFF0D1B2A),
-              ),
+            Column(
+              children: [
+                Text(
+                  'সর্বোচ্চ',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Colors.deepOrange,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  '${day.tempMax.round()}°',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 17,
+                    color: Color(0xFF0D1B2A),
+                  ),
+                ),
+              ],
             ),
-            Text(
-              '${day.tempMin.round()}°',
-              style: const TextStyle(fontSize: 13, color: Colors.black54),
+            Column(
+              children: [
+                Text(
+                  'সর্বনিম্ন',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Color(0xFF1A3A6B),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  '${day.tempMin.round()}°',
+                  style: const TextStyle(fontSize: 15, color: Colors.black54),
+                ),
+              ],
             ),
           ],
         ),
@@ -559,10 +664,10 @@ class _NearestShelters extends StatelessWidget {
     }
     if (sp.nearest.isEmpty) {
       return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 12),
+        padding: EdgeInsets.symmetric(vertical: 16),
         child: Text(
-          'No shelters found for your area.',
-          style: TextStyle(color: Colors.black54),
+          'আপনার এলাকায় কোনো আশ্রয়কেন্দ্র পাওয়া যায়নি।',
+          style: TextStyle(color: Colors.black54, fontSize: 15),
         ),
       );
     }
@@ -597,9 +702,24 @@ class _ShelterTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A3A6B),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.shield_outlined,
+              color: Colors.white,
+              size: 26,
+            ),
+          ),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -608,13 +728,13 @@ class _ShelterTile extends StatelessWidget {
                   shelter.name,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 15,
+                    fontSize: 14,
                     color: Color(0xFF0D1B2A),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(
-                  '${distKm.toStringAsFixed(1)} km away',
+                  '${distKm.toStringAsFixed(1)} কিমি দূরে',
                   style: const TextStyle(fontSize: 13, color: Colors.black54),
                 ),
               ],
@@ -624,23 +744,23 @@ class _ShelterTile extends StatelessWidget {
           GestureDetector(
             onTap: () => _openMap(shelter),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFFE3F2FD),
+                color: const Color(0xFFE8F0F7),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF1565C0), width: 1),
+                border: Border.all(color: const Color(0xFF1A3A6B), width: 1.5),
               ),
-              child: const Row(
+              child: const Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.map_outlined, size: 15, color: Color(0xFF1565C0)),
-                  SizedBox(width: 5),
+                  Icon(Icons.map_rounded, size: 22, color: Color(0xFF1A3A6B)),
+                  SizedBox(height: 3),
                   Text(
-                    'Show on Map',
+                    'মানচিত্র',
                     style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1565C0),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A3A6B),
                     ),
                   ),
                 ],
@@ -692,9 +812,25 @@ class _ContactCallCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8F5E9),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF2E7D32), width: 1.5),
+            ),
+            child: const Icon(
+              Icons.phone_in_talk_rounded,
+              color: Color(0xFF2E7D32),
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -703,14 +839,19 @@ class _ContactCallCard extends StatelessWidget {
                   contact['organisation'] ?? '',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 15,
+                    fontSize: 14,
                     color: Color(0xFF0D1B2A),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(
                   contact['phone'] ?? '',
-                  style: const TextStyle(fontSize: 13, color: Colors.black54),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: Color(0xFF1A3A6B),
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ],
             ),
@@ -719,27 +860,22 @@ class _ContactCallCard extends StatelessWidget {
           GestureDetector(
             onTap: () => _dial(contact['phone'] ?? ''),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFFE8F5E9),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.green.shade700, width: 1),
+                color: const Color(0xFF2E7D32),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Row(
+              child: const Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.phone_outlined,
-                    size: 15,
-                    color: Colors.green.shade700,
-                  ),
-                  const SizedBox(width: 5),
+                  Icon(Icons.call_rounded, color: Colors.white, size: 22),
+                  SizedBox(height: 3),
                   Text(
-                    'Call',
+                    'কল করুন',
                     style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.green.shade700,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
                 ],

@@ -23,6 +23,9 @@ dependencies:
   # State Management
   provider: ^6.1.2
 
+  # Local Storage
+  shared_preferences: ^2.3.3
+
   # URL Launcher (for SOS call & tel: links)
   url_launcher: ^6.3.1
 
