@@ -290,13 +290,21 @@ class GuidelinesPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
+      extendBodyBehindAppBar: true,
       appBar: DisasterAppBar(
         title: 'নির্দেশিকা',
         showMenuButton: true,
         onMenuTap: onMenuTap,
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 36),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          MediaQuery.of(context).padding.top +
+              100 +
+              12, // top safe area + appbar height (100 when menu shown)
+          16,
+          120, // Bottom padding for navigation bar
+        ),
         children: [
           Row(
             children: [
@@ -312,15 +320,16 @@ class GuidelinesPage extends StatelessWidget {
               const Text(
                 'আপনার নির্দেশিকাসমূহ',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 21,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF0D1B2A),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           GridView.builder(
+            padding: EdgeInsets.zero,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -362,45 +371,51 @@ class _CategoryCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 20, 14, 16),
+          padding: const EdgeInsets.fromLTRB(12, 20, 12, 16),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Column(
                 children: [
                   Container(
-                    width: 72,
-                    height: 72,
+                    width: 64,
+                    height: 64,
                     decoration: BoxDecoration(
                       color: info.color,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(info.icon, color: Colors.white, size: 34),
+                    child: Icon(info.icon, color: Colors.white, size: 30),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 16),
                   Text(
                     info.title,
                     textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 17,
+                      fontSize: 15,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF0D1B2A),
+                      height: 1.2,
                     ),
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 8),
                   Text(
                     info.subtitle,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 13, color: Colors.black45),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Colors.black45,
+                      height: 1.3,
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 14),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: info.lightColor,
                   borderRadius: BorderRadius.circular(20),
@@ -408,8 +423,10 @@ class _CategoryCard extends StatelessWidget {
                 ),
                 child: Text(
                   'বিস্তারিত দেখুন',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: info.color,
                   ),
@@ -1136,6 +1153,8 @@ class _SectionHeader extends StatelessWidget {
             children: [
               Text(
                 title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 19,
                   fontWeight: FontWeight.bold,
@@ -1145,6 +1164,8 @@ class _SectionHeader extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 subtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontSize: 14, color: Colors.black45),
               ),
             ],
@@ -1209,6 +1230,8 @@ class _SignalTile extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         d.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.bold,
@@ -1223,11 +1246,15 @@ class _SignalTile extends StatelessWidget {
                             color: Colors.black45,
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            d.windSpeed,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Colors.black54,
+                          Expanded(
+                            child: Text(
+                              d.windSpeed,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.black54,
+                              ),
                             ),
                           ),
                         ],
@@ -1443,12 +1470,16 @@ class _GroupSection extends StatelessWidget {
               children: [
                 Text(group.emoji, style: const TextStyle(fontSize: 16)),
                 const SizedBox(width: 8),
-                Text(
-                  group.heading,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: color,
+                Flexible(
+                  child: Text(
+                    group.heading,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: color,
+                    ),
                   ),
                 ),
               ],

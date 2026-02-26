@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:ui';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/app_provider.dart';
@@ -27,27 +28,34 @@ class DisasterAppBar extends StatelessWidget implements PreferredSizeWidget {
     final app = context.watch<AppProvider>();
     final barHeight = showMenuButton ? 100.0 : 76.0;
 
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Color(0xFFE0E7EF), width: 1)),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x0A000000),
-            blurRadius: 4,
-            offset: Offset(0, 2),
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 6.0, sigmaY: 6.0),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.65),
+            border: const Border(
+              bottom: BorderSide(color: Color(0x20E0E7EF), width: 0.5),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 12,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: SizedBox(
-          height: barHeight,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: showMenuButton
-                ? _homeLayout(context, app)
-                : _defaultLayout(context, app),
+          child: SafeArea(
+            bottom: false,
+            child: SizedBox(
+              height: barHeight,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: showMenuButton
+                    ? _homeLayout(context, app)
+                    : _defaultLayout(context, app),
+              ),
+            ),
           ),
         ),
       ),
@@ -61,11 +69,7 @@ class DisasterAppBar extends StatelessWidget implements PreferredSizeWidget {
         // Hamburger
         IconButton(
           onPressed: onMenuTap,
-          icon: const Icon(
-            Icons.menu_rounded,
-            color: Color(0xFF0D1B2A),
-            size: 28,
-          ),
+          icon: const Icon(Icons.more_vert, color: Color(0xFF0D1B2A), size: 28),
           tooltip: 'Menu',
         ),
         // Centred location + time
@@ -74,7 +78,7 @@ class DisasterAppBar extends StatelessWidget implements PreferredSizeWidget {
             onTap: () => _showDistrictPicker(context, app),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -232,7 +236,8 @@ class DisasterAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   // ── Helpers ───────────────────────────────────────────────────
   Future<void> _dialSOS(BuildContext context) async {
-    final uri = Uri.parse('tel:999');
+    final app = context.read<AppProvider>();
+    final uri = Uri.parse('tel:${app.sosNumber}');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else if (context.mounted) {
@@ -246,6 +251,107 @@ class DisasterAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   void _showDistrictPicker(BuildContext context, AppProvider app) {
+    // Capture providers before showing bottom sheet
+    final weatherProvider = context.read<WeatherProvider>();
+    final shelterProvider = context.read<ShelterProvider>();
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'অবস্থান নির্বাচন করুন',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0D1B2A),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Network Location Option
+            _LocationOptionTile(
+              icon: Icons.wifi_rounded,
+              title: 'নেটওয়ার্ক থেকে',
+              subtitle: 'ইন্টারনেট ব্যবহার করে অবস্থান',
+              color: const Color(0xFF1565C0),
+              onTap: () {
+                Navigator.pop(context);
+                // Start async work without blocking
+                Future.microtask(() async {
+                  await app.fetchCurrentLocation();
+                  weatherProvider.loadWeather(app.latitude, app.longitude);
+                  shelterProvider.loadShelters(
+                    app.selectedDistrict,
+                    app.latitude,
+                    app.longitude,
+                  );
+                });
+              },
+            ),
+
+            const SizedBox(height: 12),
+
+            // GPS Location Option
+            _LocationOptionTile(
+              icon: Icons.gps_fixed_rounded,
+              title: 'GPS থেকে',
+              subtitle: 'স্যাটেলাইট দিয়ে সঠিক অবস্থান',
+              color: const Color(0xFF2E7D32),
+              onTap: () {
+                Navigator.pop(context);
+                // Start async work without blocking
+                Future.microtask(() async {
+                  await app.fetchCurrentLocation();
+                  weatherProvider.loadWeather(app.latitude, app.longitude);
+                  shelterProvider.loadShelters(
+                    app.selectedDistrict,
+                    app.latitude,
+                    app.longitude,
+                  );
+                });
+              },
+            ),
+
+            const SizedBox(height: 12),
+
+            // Manual Selection Option
+            _LocationOptionTile(
+              icon: Icons.edit_location_alt_rounded,
+              title: 'ম্যানুয়াল নির্বাচন',
+              subtitle: 'জেলা তালিকা থেকে নির্বাচন করুন',
+              color: const Color(0xFFE65100),
+              onTap: () {
+                Navigator.pop(context);
+                _showManualDistrictPicker(context, app);
+              },
+            ),
+
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showManualDistrictPicker(BuildContext context, AppProvider app) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -271,7 +377,7 @@ class DisasterAppBar extends StatelessWidget implements PreferredSizeWidget {
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 14),
                 child: Text(
-                  'Select District',
+                  'জেলা নির্বাচন করুন',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -334,6 +440,84 @@ class DisasterAppBar extends StatelessWidget implements PreferredSizeWidget {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+// Helper widget for location option tiles
+class _LocationOptionTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _LocationOptionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
+            borderRadius: BorderRadius.circular(16),
+            color: color.withValues(alpha: 0.05),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 26),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF546E7A),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: color.withValues(alpha: 0.6),
+                size: 18,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

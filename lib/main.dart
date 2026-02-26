@@ -1,4 +1,5 @@
 ﻿import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,6 +17,7 @@ import 'contacts_page.dart';
 import 'guidelines_page.dart';
 import 'volunteer_page.dart';
 import 'women_safety_page.dart';
+import 'settings_page.dart';
 import 'widgets/app_drawer.dart';
 import 'widgets/family_info_form.dart';
 import 'services/family_info_service.dart';
@@ -121,7 +123,7 @@ class MainScaffold extends StatefulWidget {
 }
 
 class _MainScaffoldState extends State<MainScaffold> {
-  /// 0-3: bottom-nav pages, 4=Volunteer, 5=WomenSafety
+  /// 0-3: bottom-nav pages, 4=Volunteer, 5=WomenSafety, 6=Settings
   int _pageIndex = 0;
 
   /// 0-3 only — drives NavigationBar.selectedIndex
@@ -152,11 +154,13 @@ class _MainScaffoldState extends State<MainScaffold> {
       RepaintBoundary(child: GuidelinesPage(onMenuTap: _openDrawer)),
       RepaintBoundary(child: VolunteerPage(onMenuTap: _openDrawer)),
       RepaintBoundary(child: WomenSafetyPage(onMenuTap: _openDrawer)),
+      RepaintBoundary(child: SettingsPage(onMenuTap: _openDrawer)),
     ];
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _notificationService.initialize(context, _navigateToGuidelines);
       if (!mounted) return;
       final app = context.read<AppProvider>();
+      await app.loadSosNumber(); // Load SOS number from SharedPreferences
       app.refreshDateTime();
       _loadAllData();
       app.fetchCurrentLocation().then((_) => _loadAllData());
@@ -210,42 +214,62 @@ class _MainScaffoldState extends State<MainScaffold> {
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: const Color(0xFFF4F6FA),
+      extendBody: true,
+      extendBodyBehindAppBar: true,
       drawer: AppDrawer(currentIndex: _pageIndex, onNavigate: _onNavigate),
       body: IndexedStack(index: _pageIndex, children: _pages),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _navIndex,
-        onDestinationSelected: (i) => setState(() {
-          _navIndex = i;
-          _pageIndex = i;
-        }),
-        backgroundColor: Colors.white,
-        indicatorColor: const Color(0xFFBBDEFB),
-        surfaceTintColor: Colors.transparent,
-        shadowColor: Colors.black12,
-        elevation: 2,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home, color: Color(0xFF1565C0)),
-            label: 'হোম',
+      bottomNavigationBar: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 6.0, sigmaY: 6.0),
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  width: 1,
+                ),
+              ),
+            ),
+            child: NavigationBar(
+              selectedIndex: _navIndex,
+              onDestinationSelected: (i) => setState(() {
+                _navIndex = i;
+                _pageIndex = i;
+              }),
+              backgroundColor: Colors.white.withValues(alpha: 0.7),
+              indicatorColor: const Color(0xFFBBDEFB),
+              surfaceTintColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              elevation: 0,
+              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+              destinations: const [
+                NavigationDestination(
+                  icon: Icon(Icons.home_outlined),
+                  selectedIcon: Icon(Icons.home, color: Color(0xFF1565C0)),
+                  label: 'হোম',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.location_city_outlined),
+                  selectedIcon: Icon(
+                    Icons.location_city,
+                    color: Color(0xFF1565C0),
+                  ),
+                  label: 'আশ্রয়কেন্দ্র',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.contacts_outlined),
+                  selectedIcon: Icon(Icons.contacts, color: Color(0xFF1565C0)),
+                  label: 'যোগাযোগ',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.menu_book_outlined),
+                  selectedIcon: Icon(Icons.menu_book, color: Color(0xFF1565C0)),
+                  label: 'নির্দেশিকা',
+                ),
+              ],
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.location_city_outlined),
-            selectedIcon: Icon(Icons.location_city, color: Color(0xFF1565C0)),
-            label: 'আশ্রয়কেন্দ্র',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.contacts_outlined),
-            selectedIcon: Icon(Icons.contacts, color: Color(0xFF1565C0)),
-            label: 'যোগাযোগ',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.menu_book_outlined),
-            selectedIcon: Icon(Icons.menu_book, color: Color(0xFF1565C0)),
-            label: 'নির্দেশিকা',
-          ),
-        ],
+        ),
       ),
     );
   }

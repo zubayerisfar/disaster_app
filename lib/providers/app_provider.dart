@@ -4,9 +4,11 @@
 // It is the single source of truth for location-dependent data loading;
 // other providers listen for [selectedDistrict] changes and reload data.
 
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AppProvider extends ChangeNotifier {
   // ──────────────────────────────────────────────────────────────────────────
@@ -19,6 +21,7 @@ class AppProvider extends ChangeNotifier {
   String _dateTimeString = '';
   bool _isLocating = false;
   String? _locationError;
+  String _sosNumber = '999'; // Default SOS number
 
   // ──────────────────────────────────────────────────────────────────────────
   // Getters
@@ -30,6 +33,7 @@ class AppProvider extends ChangeNotifier {
   String get dateTimeString => _dateTimeString;
   bool get isLocating => _isLocating;
   String? get locationError => _locationError;
+  String get sosNumber => _sosNumber;
 
   // ──────────────────────────────────────────────────────────────────────────
   // Date / Time
@@ -40,9 +44,7 @@ class AppProvider extends ChangeNotifier {
   void refreshDateTime() {
     // intl's DateFormat uses the local timezone; ensure the device is set to
     // Asia/Dhaka or convert manually if needed.
-    _dateTimeString = DateFormat(
-      'EEE, d MMM yyyy  hh:mm a',
-    ).format(DateTime.now());
+    _dateTimeString = DateFormat('EEE, d MMM yyyy').format(DateTime.now());
     notifyListeners();
   }
 
@@ -52,6 +54,7 @@ class AppProvider extends ChangeNotifier {
 
   /// Requests the device's current GPS position and updates [_latitude] and
   /// [_longitude].  Uses [geolocator] for cross-platform location access.
+  /// Also detects and sets the nearest district based on coordinates.
   Future<void> fetchCurrentLocation() async {
     _isLocating = true;
     _locationError = null;
@@ -76,6 +79,9 @@ class AppProvider extends ChangeNotifier {
 
       _latitude = position.latitude;
       _longitude = position.longitude;
+
+      // Auto-detect nearest district from coordinates
+      _selectedDistrict = _detectNearestDistrict(_latitude, _longitude);
     } catch (e) {
       _locationError = e.toString();
     } finally {
@@ -83,6 +89,51 @@ class AppProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  /// Detects the nearest district from given coordinates using distance calculation
+  String _detectNearestDistrict(double lat, double lon) {
+    String nearestDistrict = 'Dhaka';
+    double minDistance = double.infinity;
+
+    _districtCoords.forEach((district, coords) {
+      final districtLat = coords.$1;
+      final districtLon = coords.$2;
+
+      // Calculate distance using Haversine formula
+      final distance = _calculateDistance(lat, lon, districtLat, districtLon);
+
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestDistrict = district;
+      }
+    });
+
+    return nearestDistrict;
+  }
+
+  /// Calculate distance between two coordinates in kilometers (Haversine formula)
+  double _calculateDistance(
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
+  ) {
+    const double earthRadius = 6371; // km
+    final dLat = _degreesToRadians(lat2 - lat1);
+    final dLon = _degreesToRadians(lon2 - lon1);
+
+    final a =
+        (sin(dLat / 2) * sin(dLat / 2)) +
+        cos(_degreesToRadians(lat1)) *
+            cos(_degreesToRadians(lat2)) *
+            sin(dLon / 2) *
+            sin(dLon / 2);
+
+    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+    return earthRadius * c;
+  }
+
+  double _degreesToRadians(double degrees) => degrees * pi / 180;
 
   // ──────────────────────────────────────────────────────────────────────────
   // District selection
@@ -311,4 +362,23 @@ class AppProvider extends ChangeNotifier {
     'Tangail',
     'Thakurgaon',
   ];
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // SOS Number Settings
+  // ──────────────────────────────────────────────────────────────────────────
+
+  /// Load SOS number from SharedPreferences. Call this on app startup.
+  Future<void> loadSosNumber() async {
+    final prefs = await SharedPreferences.getInstance();
+    _sosNumber = prefs.getString('sos_number') ?? '999';
+    notifyListeners();
+  }
+
+  /// Save SOS number to SharedPreferences
+  Future<void> setSosNumber(String number) async {
+    _sosNumber = number;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('sos_number', number);
+    notifyListeners();
+  }
 }

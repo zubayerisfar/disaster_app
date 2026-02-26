@@ -31,22 +31,28 @@ class _ContactsPageState extends State<ContactsPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
+      extendBodyBehindAppBar: true,
       appBar: DisasterAppBar(
         title: 'জরুরি যোগাযোগ',
         showMenuButton: true,
         onMenuTap: widget.onMenuTap,
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          MediaQuery.of(context).padding.top +
+              76 +
+              16, // top safe area + appbar height + spacing
+          16,
+          120, // Bottom padding for navigation bar
+        ),
         children: [
           _PanelHeader(
             title: 'জাতীয় জরুরি নম্বর',
             icon: Icons.phone_in_talk_outlined,
           ),
           const SizedBox(height: 10),
-          ...ContactService.criticalContacts.map(
-            (c) => _QuickCallCard(contact: c),
-          ),
+          _CriticalContactsCard(contacts: ContactService.criticalContacts),
           const SizedBox(height: 24),
 
           _PanelHeader(
@@ -153,6 +159,115 @@ class _PanelHeader extends StatelessWidget {
   }
 }
 
+class _CriticalContactsCard extends StatelessWidget {
+  final List<Map<String, String>> contacts;
+  const _CriticalContactsCard({required this.contacts});
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      borderRadius: BorderRadius.circular(12),
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        children: contacts.asMap().entries.map((entry) {
+          final index = entry.key;
+          final contact = entry.value;
+          final isLast = index == contacts.length - 1;
+
+          return Column(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.red.withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.phone,
+                      color: Colors.red.shade700,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          contact['organisation'] ?? '',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: Color(0xFF0D1B2A),
+                          ),
+                        ),
+                        Text(
+                          contact['description'] ?? '',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.black54,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => _dial(contact['phone'] ?? ''),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade700,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.red.withValues(alpha: 0.4),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        contact['phone'] ?? '',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (!isLast)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Divider(
+                    height: 1,
+                    color: Colors.black.withValues(alpha: 0.1),
+                  ),
+                ),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Future<void> _dial(String number) async {
+    final uri = Uri.parse('tel:$number');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
+  }
+}
+
 class _GlassDropdown extends StatelessWidget {
   final String label;
   final bool isLoading;
@@ -218,89 +333,6 @@ class _GlassDropdown extends StatelessWidget {
               ),
             ),
     );
-  }
-}
-
-class _QuickCallCard extends StatelessWidget {
-  final Map<String, String> contact;
-  const _QuickCallCard({required this.contact});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: GlassCard(
-        borderRadius: BorderRadius.circular(12),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.25),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(Icons.phone, color: Colors.red.shade700, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    contact['organisation'] ?? '',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                      color: Color(0xFF0D1B2A),
-                    ),
-                  ),
-                  Text(
-                    contact['description'] ?? '',
-                    style: const TextStyle(fontSize: 11, color: Colors.black54),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () => _dial(contact['phone'] ?? ''),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade700,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.red.withValues(alpha: 0.4),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Text(
-                  contact['phone'] ?? '',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _dial(String number) async {
-    final uri = Uri.parse('tel:$number');
-    if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
 }
 

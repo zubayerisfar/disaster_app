@@ -137,8 +137,11 @@ class AppDrawer extends StatelessWidget {
                 _DrawerItem(
                   icon: Icons.settings_rounded,
                   label: 'সেটিংস',
-                  onTap: () => Navigator.pop(context),
-                  comingSoon: true,
+                  selected: currentIndex == 6,
+                  onTap: () {
+                    Navigator.pop(context);
+                    onNavigate(6);
+                  },
                 ),
                 _DrawerItem(
                   icon: Icons.info_outline_rounded,

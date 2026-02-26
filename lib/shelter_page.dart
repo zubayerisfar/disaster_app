@@ -102,6 +102,9 @@ class _ShelterPageState extends State<ShelterPage> {
   }
 
   void _showShelterSheet(Shelter s) {
+    // Capture SOS number before showing modal
+    final sosNumber = context.read<AppProvider>().sosNumber;
+
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.white,
@@ -215,13 +218,13 @@ class _ShelterPageState extends State<ShelterPage> {
                   child: OutlinedButton.icon(
                     onPressed: () {
                       Navigator.pop(context);
-                      _callNumber('999');
+                      _callNumber(sosNumber);
                     },
                     icon: const Icon(Icons.call_rounded, size: 20),
-                    label: const Text(
-                      'কল করুন\n999',
+                    label: Text(
+                      'কল করুন\n$sosNumber',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
                         height: 1.3,
@@ -295,114 +298,122 @@ class _ShelterPageState extends State<ShelterPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
+      extendBodyBehindAppBar: true,
       appBar: DisasterAppBar(
         title: 'আশ্রয়কেন্দ্র',
         showMenuButton: true,
         onMenuTap: widget.onMenuTap,
       ),
-      body: Column(
-        children: [
-          Expanded(
-            flex: 5,
-            child: Stack(
-              children: [
-                FlutterMap(
-                  mapController: _mapController,
-                  options: MapOptions(
-                    initialCenter: LatLng(app.latitude, app.longitude),
-                    initialZoom: 10,
-                    interactionOptions: const InteractionOptions(
-                      flags: InteractiveFlag.all,
-                    ),
-                  ),
-                  children: [
-                    TileLayer(
-                      urlTemplate:
-                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'com.example.disaster_app',
-                    ),
-                    MarkerLayer(markers: _buildMarkers(sp.shelters)),
-                  ],
-                ),
-                if (sp.isLoading)
-                  const Positioned.fill(
-                    child: ColoredBox(
-                      color: Color(0x55FFFFFF),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFF1565C0),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          Expanded(
-            flex: 4,
-            child: Container(
-              color: Colors.white,
-              child: Column(
+      body: Padding(
+        padding: EdgeInsets.only(
+          top:
+              MediaQuery.of(context).padding.top +
+              100, // top safe area + appbar height
+        ),
+        child: Column(
+          children: [
+            Expanded(
+              flex: 5,
+              child: Stack(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        '${app.selectedDistrict}-এর আশ্রয়কেন্দ্র',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF0D1B2A),
-                        ),
+                  FlutterMap(
+                    mapController: _mapController,
+                    options: MapOptions(
+                      initialCenter: LatLng(app.latitude, app.longitude),
+                      initialZoom: 10,
+                      interactionOptions: const InteractionOptions(
+                        flags: InteractiveFlag.all,
                       ),
                     ),
+                    children: [
+                      TileLayer(
+                        urlTemplate:
+                            'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.example.disaster_app',
+                      ),
+                      MarkerLayer(markers: _buildMarkers(sp.shelters)),
+                    ],
                   ),
-                  if (sp.error != null)
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(
-                        sp.error!,
-                        style: const TextStyle(color: Colors.redAccent),
-                      ),
-                    )
-                  else if (sp.shelters.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.all(20),
-                      child: Text(
-                        'এলাকায় কোনো আশ্রয়কেন্দ্র পাওয়া যায়নি।',
-                        style: TextStyle(fontSize: 15, color: Colors.black54),
-                      ),
-                    )
-                  else
-                    Expanded(
-                      child: ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
-                        itemCount: sp.shelters.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 6),
-                        itemBuilder: (_, i) {
-                          final s = sp.shelters[i];
-                          final dist = sp.distanceTo(
-                            app.latitude,
-                            app.longitude,
-                            s,
-                          );
-                          return _ShelterListTile(
-                            shelter: s,
-                            distanceKm: dist,
-                            onTap: () {
-                              _mapController.move(LatLng(s.lat, s.lng), 14);
-                              _showShelterSheet(s);
-                            },
-                          );
-                        },
+                  if (sp.isLoading)
+                    const Positioned.fill(
+                      child: ColoredBox(
+                        color: Color(0x55FFFFFF),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xFF1565C0),
+                          ),
+                        ),
                       ),
                     ),
                 ],
               ),
             ),
-          ),
-        ],
+            Expanded(
+              flex: 4,
+              child: Container(
+                color: Colors.white,
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          '${app.selectedDistrict}-এর আশ্রয়কেন্দ্র',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF0D1B2A),
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (sp.error != null)
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          sp.error!,
+                          style: const TextStyle(color: Colors.redAccent),
+                        ),
+                      )
+                    else if (sp.shelters.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.all(20),
+                        child: Text(
+                          'এলাকায় কোনো আশ্রয়কেন্দ্র পাওয়া যায়নি।',
+                          style: TextStyle(fontSize: 15, color: Colors.black54),
+                        ),
+                      )
+                    else
+                      Expanded(
+                        child: ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(12, 4, 12, 120),
+                          itemCount: sp.shelters.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 6),
+                          itemBuilder: (_, i) {
+                            final s = sp.shelters[i];
+                            final dist = sp.distanceTo(
+                              app.latitude,
+                              app.longitude,
+                              s,
+                            );
+                            return _ShelterListTile(
+                              shelter: s,
+                              distanceKm: dist,
+                              onTap: () {
+                                _mapController.move(LatLng(s.lat, s.lng), 14);
+                                _showShelterSheet(s);
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

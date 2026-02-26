@@ -85,7 +85,12 @@ class _WomenSafetyPageState extends State<WomenSafetyPage> {
         onMenuTap: widget.onMenuTap,
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 52),
+        padding: const EdgeInsets.fromLTRB(
+          16,
+          20,
+          16,
+          120,
+        ), // Bottom padding for navigation bar
         children: [
           // ── Emergency Alert Form ────────────────────────────────────────
           _SectionHeader(

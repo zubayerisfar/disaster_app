@@ -86,15 +86,19 @@ class _VolunteerPageState extends State<VolunteerPage> {
                 }
               },
             ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          _showRegistrationSheet(context);
-        },
-        backgroundColor: const Color(0xFF1565C0),
-        icon: const Icon(Icons.person_add_rounded),
-        label: const Text(
-          'নিবন্ধন করুন',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 80), // Lift above bottom nav bar
+        child: FloatingActionButton.extended(
+          heroTag: 'volunteerRegistrationFAB',
+          onPressed: () {
+            _showRegistrationSheet(context);
+          },
+          backgroundColor: const Color(0xFF1565C0),
+          icon: const Icon(Icons.person_add_rounded),
+          label: const Text(
+            'নিবন্ধন করুন',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+          ),
         ),
       ),
     );
@@ -151,7 +155,7 @@ class _VolunteerListView extends StatelessWidget {
     }).toList()..sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 120),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

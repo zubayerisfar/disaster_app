@@ -27,30 +27,30 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    // Set debug warning level for demonstration
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        // 🔧 CHANGE THIS VALUE TO TEST NOTIFICATIONS (5+ triggers notification)
-        context.read<WeatherProvider>().setDebugWarningLevel(7);
-      }
-    });
+    // Warning level is automatically calculated from wind speed
+    // No manual override needed - real weather data determines the signal level
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          debugPrint('🧪 Test button pressed');
-          final notificationService = NotificationService();
-          await notificationService.testNotification(7);
-        },
-        backgroundColor: Colors.red,
-        icon: const Icon(Icons.notifications_active, color: Colors.white),
-        label: const Text(
-          'Test Notification',
-          style: TextStyle(color: Colors.white),
+      extendBodyBehindAppBar: true,
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 80), // Lift above bottom nav bar
+        child: FloatingActionButton.extended(
+          heroTag: 'homeTestNotificationFAB',
+          onPressed: () async {
+            debugPrint('🧪 Test button pressed');
+            final notificationService = NotificationService();
+            await notificationService.testNotification(7);
+          },
+          backgroundColor: Colors.red,
+          icon: const Icon(Icons.notifications_active, color: Colors.white),
+          label: const Text(
+            'Test Notification',
+            style: TextStyle(color: Colors.white),
+          ),
         ),
       ),
       appBar: DisasterAppBar(
@@ -76,7 +76,14 @@ class _HomePageState extends State<HomePage> {
           ]);
         },
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 52),
+          padding: EdgeInsets.fromLTRB(
+            16,
+            MediaQuery.of(context).padding.top +
+                100 +
+                20, // top safe area + appbar height + spacing
+            16,
+            120, // Bottom padding for navigation bar
+          ),
           children: [
             const _WeatherHeroCard(),
             const SizedBox(height: 28),
@@ -250,21 +257,12 @@ class _WeatherHeroCard extends StatelessWidget {
     return const Color(0xFFB71C1C);
   }
 
-  Color _alertBg(int level) {
-    if (level == 0) return const Color(0xFFE8F5E9);
-    if (level <= 2) return const Color(0xFFE8F5E9);
-    if (level <= 4) return const Color(0xFFFFF8E1);
-    if (level <= 7) return const Color(0xFFFFF3E0);
-    return const Color(0xFFFFEBEE);
-  }
-
   @override
   Widget build(BuildContext context) {
     final wp = context.watch<WeatherProvider>();
     final level = wp.warningLevel;
     final lc = _lc(level);
     final accent = _alertAccent(level);
-    final bg = _alertBg(level);
     final alert = _alerts[level.clamp(0, 10)];
 
     return GestureDetector(
@@ -272,92 +270,33 @@ class _WeatherHeroCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: lc.withValues(alpha: 0.3), width: 2),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: lc.withValues(alpha: 0.4), width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: lc.withValues(alpha: 0.15),
-              blurRadius: 24,
+              color: lc.withValues(alpha: 0.12),
+              blurRadius: 20,
               spreadRadius: 0,
-              offset: const Offset(0, 8),
+              offset: const Offset(0, 6),
             ),
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Alert banner ───────────────────────────────────────────────
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: bg,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(18),
-                  topRight: Radius.circular(18),
-                ),
-              ),
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(alert.icon, color: accent, size: 30),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          alert.title,
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800,
-                            color: accent,
-                            height: 1.3,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          alert.quote,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            color: Color(0xFF263238),
-                            height: 1.6,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // ── Divider ────────────────────────────────────────────────────
-            Divider(
-              height: 1,
-              thickness: 1,
-              color: accent.withValues(alpha: 0.18),
-            ),
-
-            // ── Signal + Weather ───────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // ── Top row: Signal badge + icon ───────────────────────
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // Signal panel – tappable to view detailed guidelines
+                      // ── Signal badge (large, tappable) ─────────
                       Material(
                         color: Colors.transparent,
                         borderRadius: BorderRadius.circular(14),
@@ -366,58 +305,76 @@ class _WeatherHeroCard extends StatelessWidget {
                           onTap: () =>
                               GuidelinesPage.openSignalPage(context, level),
                           child: Container(
-                            width: 126,
-                            padding: const EdgeInsets.fromLTRB(14, 14, 10, 16),
-                            decoration: BoxDecoration(
-                              color: lc.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border(
-                                left: BorderSide(color: lc, width: 5),
-                              ),
+                            padding: const EdgeInsets.only(
+                              left: 0,
+                              right: 12,
+                              top: 12,
+                              bottom: 12,
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            // decoration: BoxDecoration(
+                            //   color: lc.withValues(alpha: 0.12),
+                            //   borderRadius: BorderRadius.circular(30),
+                            //   border: Border.all(
+                            //     color: lc.withValues(alpha: 0.3),
+                            //     width: 1.5,
+                            //   ),
+                            // ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Row(
+                                Container(
+                                  width: 72,
+                                  height: 72,
+                                  decoration: BoxDecoration(
+                                    color: lc.withValues(alpha: 0.15),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    level == 0 ? '✓' : _bn[level.clamp(0, 10)],
+                                    style: TextStyle(
+                                      fontSize: 36,
+                                      fontWeight: FontWeight.w900,
+                                      color: lc,
+                                      height: 1.1,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      level == 0 ? 'নিরাপদ' : 'সংকেত',
+                                      level == 0
+                                          ? 'নিরাপদ'
+                                          : 'নম্বর সংকেত চলছে', //'${_bn[level.clamp(0, 10)]} নম্বর সংকেত চলছে',
                                       style: TextStyle(
-                                        fontSize: 11,
-                                        letterSpacing: 0.5,
+                                        fontSize: 22,
                                         fontWeight: FontWeight.w800,
                                         color: lc,
                                       ),
                                     ),
-                                    const Spacer(),
-                                    Icon(
-                                      Icons.arrow_forward_ios_rounded,
-                                      size: 10,
-                                      color: lc.withValues(alpha: 0.7),
+                                    const SizedBox(height: 2),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.arrow_forward_rounded,
+                                          size: 12,
+                                          color: lc.withValues(alpha: 0.6),
+                                        ),
+                                        const SizedBox(width: 3),
+                                        Text(
+                                          'নির্দেশিকা দেখুন',
+                                          style: TextStyle(
+                                            fontSize: 15,
+                                            color: Colors.black45,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  _bn[level.clamp(0, 10)],
-                                  style: TextStyle(
-                                    fontSize: 60,
-                                    fontWeight: FontWeight.w900,
-                                    color: lc,
-                                    height: 1.05,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  level == 0
-                                      ? 'কোনো সংকেত নেই'
-                                      : 'বিস্তারিত দেখতে চাপুন',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: lc.withValues(alpha: 0.8),
-                                    height: 1.4,
-                                    fontWeight: FontWeight.w600,
-                                  ),
                                 ),
                               ],
                             ),
@@ -425,121 +382,229 @@ class _WeatherHeroCard extends StatelessWidget {
                         ),
                       ),
 
-                      const SizedBox(width: 14),
+                      const Spacer(),
 
-                      // Weather details
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (wp.isLoading && wp.weatherData == null)
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 32),
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    color: Color(0xFF1565C0),
-                                    strokeWidth: 2.5,
-                                  ),
-                                ),
-                              )
-                            else if (wp.weatherData != null) ...[
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
-                                    child: FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      alignment: Alignment.bottomLeft,
-                                      child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.end,
-                                        children: [
-                                          Text(
-                                            '${wp.weatherData!.currentTemp.round()}',
-                                            style: const TextStyle(
-                                              color: Color(0xFF0D1B2A),
-                                              fontSize: 68,
-                                              fontWeight: FontWeight.w200,
-                                              height: 1,
-                                            ),
-                                          ),
-                                          const Padding(
-                                            padding: EdgeInsets.only(
-                                              bottom: 12,
-                                            ),
-                                            child: Text(
-                                              '°C',
-                                              style: TextStyle(
-                                                color: Colors.black45,
-                                                fontSize: 22,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  CachedNetworkImage(
-                                    imageUrl: wp.weatherData!.currentIconUrl,
-                                    width: 52,
-                                    height: 52,
-                                    errorWidget: (_, _, _) => const Icon(
-                                      Icons.wb_cloudy,
-                                      color: Colors.grey,
-                                      size: 44,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                wp.weatherData!.currentDescription
-                                    .toUpperCase(),
-                                style: const TextStyle(
-                                  color: Colors.black45,
-                                  fontSize: 14,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              Row(
-                                children: [
-                                  Flexible(
-                                    child: _Stat(
-                                      icon: Icons.air_rounded,
-                                      value:
-                                          '${wp.weatherData!.currentWindSpeed.round()} কিমি/ঘন্টা',
-                                      label: 'বাতাস',
-                                    ),
-                                  ),
-                                  const SizedBox(width: 14),
-                                  Flexible(
-                                    child: _Stat(
-                                      icon: Icons.water_drop_rounded,
-                                      value:
-                                          '${wp.weatherData!.currentHumidity.round()}%',
-                                      label: 'আর্দ্রতা',
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ],
+                      // ── Weather icon ───────────────────────────
+                      if (wp.isLoading && wp.weatherData == null)
+                        const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            color: Color(0xFF90A4AE),
+                            strokeWidth: 2,
+                          ),
+                        )
+                      else if (wp.weatherData != null)
+                        CachedNetworkImage(
+                          imageUrl: wp.weatherData!.currentIconUrl,
+                          width: 52,
+                          height: 52,
+                          errorWidget: (_, _, _) => const Icon(
+                            Icons.wb_cloudy,
+                            color: Colors.grey,
+                            size: 44,
+                          ),
                         ),
-                      ),
                     ],
                   ),
+
+                  const SizedBox(height: 12),
+
+                  // ── Temp + Wind + Humidity row ─────────────────────────
+                  if (wp.weatherData != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF5F7FA),
+                        borderRadius: BorderRadius.circular(35),
+                      ),
+                      child: Row(
+                        children: [
+                          // Temperature
+                          Expanded(
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.thermostat_rounded,
+                                  color: Color(0xFF546E7A),
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 6),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${wp.weatherData!.currentTemp.round()}°C',
+                                      style: const TextStyle(
+                                        color: Color(0xFF0D1B2A),
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const Text(
+                                      'তাপমাত্রা',
+                                      style: TextStyle(
+                                        color: Color(0xFF90A4AE),
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          Container(
+                            width: 1,
+                            height: 28,
+                            color: const Color(0xFFE0E0E0),
+                          ),
+
+                          // Wind
+                          Expanded(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.air_rounded,
+                                  color: Color(0xFF546E7A),
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '${wp.weatherData!.currentWindSpeed.round()} কিমি/ঘ',
+                                        style: const TextStyle(
+                                          color: Color(0xFF0D1B2A),
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const Text(
+                                        'বাতাস',
+                                        style: TextStyle(
+                                          color: Color(0xFF90A4AE),
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          Container(
+                            width: 1,
+                            height: 28,
+                            color: const Color(0xFFE0E0E0),
+                          ),
+
+                          // Humidity
+                          Expanded(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.water_drop_rounded,
+                                  color: Color(0xFF546E7A),
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 6),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${wp.weatherData!.currentHumidity.round()}%',
+                                      style: const TextStyle(
+                                        color: Color(0xFF0D1B2A),
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const Text(
+                                      'আর্দ্রতা',
+                                      style: TextStyle(
+                                        color: Color(0xFF90A4AE),
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
 
                   // Refresh progress bar
                   if (wp.isLoading && wp.weatherData != null)
                     Padding(
-                      padding: const EdgeInsets.only(top: 14),
+                      padding: const EdgeInsets.only(top: 12),
                       child: LinearProgressIndicator(
                         backgroundColor: const Color(0xFFE0E0E0),
                         color: lc,
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
+                ],
+              ),
+            ),
+
+            // ── Alert banner (bottom) ──────────────────────────────────
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: lc.withValues(alpha: 0.08),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(22),
+                  bottomRight: Radius.circular(22),
+                ),
+                border: Border(
+                  top: BorderSide(color: lc.withValues(alpha: 0.15), width: 1),
+                ),
+              ),
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(alert.icon, color: accent, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          alert.title,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: accent,
+                            height: 1.3,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          alert.quote,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            color: Color(0xFF546E7A),
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -960,44 +1025,6 @@ class _DetailRow extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _Stat extends StatelessWidget {
-  final IconData icon;
-  final String value;
-  final String label;
-  const _Stat({required this.icon, required this.value, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Icon(icon, color: const Color(0xFF1A3A6B), size: 22),
-        const SizedBox(width: 6),
-        Flexible(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: const TextStyle(
-                  color: Color(0xFF0D1B2A),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-                softWrap: true,
-              ),
-              Text(
-                label,
-                style: const TextStyle(color: Colors.black45, fontSize: 12),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

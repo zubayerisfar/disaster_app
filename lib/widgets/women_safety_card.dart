@@ -25,6 +25,7 @@ class WomenSafetyCard extends StatefulWidget {
 class _WomenSafetyCardState extends State<WomenSafetyCard> {
   final _nameCtrl = TextEditingController();
   final _locCtrl = TextEditingController();
+  final _msgCtrl = TextEditingController();
   final _service = SafetyService();
   final _formKey = GlobalKey<FormState>();
 
@@ -174,6 +175,7 @@ class _WomenSafetyCardState extends State<WomenSafetyCard> {
   void dispose() {
     _nameCtrl.dispose();
     _locCtrl.dispose();
+    _msgCtrl.dispose();
     super.dispose();
   }
 
@@ -240,7 +242,7 @@ class _WomenSafetyCardState extends State<WomenSafetyCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'নারী ও শিশু সুরক্ষা',
+                        'অভিযোগ করুন',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -249,14 +251,14 @@ class _WomenSafetyCardState extends State<WomenSafetyCard> {
                         ),
                       ),
                       SizedBox(height: 3),
-                      Text(
-                        'Women & Children Safety Alert',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
+                      // Text(
+                      //   'Women & Children Safety Alert',
+                      //   style: TextStyle(
+                      //     color: Colors.white70,
+                      //     fontSize: 12,
+                      //     fontWeight: FontWeight.w400,
+                      //   ),
+                      // ),
                     ],
                   ),
                 ),
@@ -363,6 +365,23 @@ class _WomenSafetyCardState extends State<WomenSafetyCard> {
                         ),
                       ),
                     ],
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // Message field
+                  _FieldLabel(icon: Icons.message_rounded, label: 'বার্তা'),
+                  const SizedBox(height: 6),
+                  TextFormField(
+                    controller: _msgCtrl,
+                    textInputAction: TextInputAction.done,
+                    maxLines: 3,
+                    decoration: _inputDeco(
+                      hint: 'আপনার বার্তা বা অভিযোগ লিখুন',
+                      icon: Icons.message_outlined,
+                    ),
+                    validator: (v) =>
+                        (v == null || v.trim().isEmpty) ? 'বার্তা লিখুন' : null,
                   ),
 
                   const SizedBox(height: 18),
