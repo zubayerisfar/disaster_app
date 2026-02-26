@@ -33,8 +33,10 @@ class WeatherProvider extends ChangeNotifier {
 
   /// For testing only — force a specific warning level without real wind data.
   void setDebugWarningLevel(int level) {
+    debugPrint('🔧 WeatherProvider: Setting debug warning level to $level');
     _warningLevel = level;
     notifyListeners();
+    debugPrint('🔧 WeatherProvider: notifyListeners() called');
   }
 
   /// Loads demo weather immediately (synchronously via service static method).

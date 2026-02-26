@@ -114,8 +114,8 @@ class _MainScaffoldState extends State<MainScaffold> {
   Timer? _clockTimer;
   final _notificationService = NotificationService();
 
-  static final List<Widget> _pages = [
-    const RepaintBoundary(child: HomePage()),
+  final List<Widget> _pages = [
+    RepaintBoundary(child: HomePage()),
     const RepaintBoundary(child: ShelterPage()),
     const RepaintBoundary(child: ContactsPage()),
     const RepaintBoundary(child: GuidelinesPage()),
@@ -124,8 +124,8 @@ class _MainScaffoldState extends State<MainScaffold> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _notificationService.initialize(context, _navigateToGuidelines);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _notificationService.initialize(context, _navigateToGuidelines);
       final app = context.read<AppProvider>();
       app.refreshDateTime();
       _loadAllData();
@@ -142,6 +142,9 @@ class _MainScaffoldState extends State<MainScaffold> {
   void _onWeatherChanged() {
     if (!mounted) return;
     final weatherProvider = context.read<WeatherProvider>();
+    debugPrint(
+      '⚡ Weather changed! Current level: ${weatherProvider.warningLevel}',
+    );
     _notificationService.checkWarningLevel(weatherProvider);
   }
 

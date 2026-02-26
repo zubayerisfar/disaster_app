@@ -26,6 +26,9 @@ dependencies:
   # Local Storage
   shared_preferences: ^2.3.3
 
+  # Local Notifications
+  flutter_local_notifications: ^18.0.1
+
   # URL Launcher (for SOS call & tel: links)
   url_launcher: ^6.3.1
 

@@ -87,7 +87,7 @@ class DisasterAppBar extends StatelessWidget implements PreferredSizeWidget {
                 GestureDetector(
                   onTap: () => _dialSOS(context),
                   child: Container(
-                    width: 72,
+                    width: 95,
                     height: 48,
                     decoration: BoxDecoration(
                       color: const Color(0xFFD32F2F),
@@ -103,12 +103,12 @@ class DisasterAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ),
                     child: const Center(
                       child: Text(
-                        'জরুরি',
+                        'জরুরি সাহায্য',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w900,
-                          fontSize: 16,
-                          letterSpacing: 1,
+                          fontSize: 13,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ),
