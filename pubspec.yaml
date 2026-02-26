@@ -38,17 +38,54 @@ dependencies:
   # Cached network images (for weather icons)
   cached_network_image: ^3.4.1
 
+  # Native splash (runtime remove call)
+  flutter_native_splash: ^2.4.6
+
   # Cupertino icons
   cupertino_icons: ^1.0.8
+
+  # Media
+  video_player: ^2.9.3
+  audioplayers: ^6.1.0
+  path_provider: ^2.1.5
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.3
 
 flutter:
   uses-material-design: true
 
-  # Add asset folders here if you later include local images / icons
-  # assets:
-  #   - assets/images/
+  assets:
+    - assets/icons/
+    - assets/images/
+    - assets/videos/
+    - assets/audios/
+
+# ── App Icon configuration ─────────────────────────────────────────────────────
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/app_icon.png"
+  min_sdk_android: 21
+  web:
+    generate: false
+  windows:
+    generate: false
+  macos:
+    generate: false
+
+# ── Native Splash Screen configuration ────────────────────────────────────────
+flutter_native_splash:
+  color: "#EEF4FD"
+  image: assets/icons/app_icon.png
+  color_dark: "#1A2A4A"
+  image_dark: assets/icons/app_icon.png
+  android_12:
+    color: "#EEF4FD"
+    image: assets/icons/app_icon.png
+    color_dark: "#1A2A4A"
+    image_dark: assets/icons/app_icon.png
+  fullscreen: false

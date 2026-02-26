@@ -1,5 +1,6 @@
 ﻿import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/app_provider.dart';
@@ -8,6 +9,7 @@ import 'providers/shelter_provider.dart';
 import 'providers/contact_provider.dart';
 
 import 'home_page.dart';
+import 'splash_screen.dart';
 import 'shelter_page.dart';
 import 'contacts_page.dart';
 import 'guidelines_page.dart';
@@ -18,7 +20,10 @@ import 'services/notification_service.dart';
 // Design tokens and GlassCard are in theme.dart
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  // Remove native splash once Flutter is ready to paint our custom splash
+  FlutterNativeSplash.remove();
   runApp(const DisasterApp());
 }
 
@@ -35,7 +40,7 @@ class DisasterApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ContactProvider()),
       ],
       child: MaterialApp(
-        title: 'Disaster BD',
+        title: 'দুর্যোগ সেবা',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           useMaterial3: true,
@@ -45,7 +50,8 @@ class DisasterApp extends StatelessWidget {
           ),
           scaffoldBackgroundColor: const Color(0xFFF4F6FA),
         ),
-        home: const AppInitializer(),
+        home: const SplashScreen(),
+        routes: {'/home': (_) => const AppInitializer()},
       ),
     );
   }

@@ -14,7 +14,7 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
     <application
-        android:label="disaster_app"
+        android:label="দুর্যোগ সেবা"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 

@@ -1,4 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:video_player/video_player.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'theme.dart';
 import 'widgets/disaster_app_bar.dart';
 
@@ -269,6 +274,14 @@ class GuidelinesPage extends StatelessWidget {
       icon: Icons.local_fire_department_rounded,
       color: Color(0xFFDC2626),
       lightColor: Color(0xFFFFF5F5),
+    ),
+    _CategoryInfo(
+      index: 6,
+      title: 'জলোচ্ছ্বাস',
+      subtitle: 'আগে, সময়ে ও পরে করণীয়',
+      icon: Icons.tsunami_rounded,
+      color: Color(0xFF0891B2),
+      lightColor: Color(0xFFECFEFF),
     ),
   ];
 
@@ -558,6 +571,11 @@ class _GuidelineDetailPage extends StatelessWidget {
             title: 'ঘূর্ণিঝড় নির্দেশিকা',
             subtitle: 'আগে, সময়ে ও পরে করণীয়',
           ),
+          const SizedBox(height: 12),
+          const _DisasterMediaSection(
+            videoAsset: 'assets/videos/cyclone guideline.mp4',
+            audioAsset: 'audios/cyclone guideline.MP3',
+          ),
           const SizedBox(height: 8),
           const _GuidelineTile(
             title: 'পরিবারের জন্য প্রস্তুতি',
@@ -681,6 +699,11 @@ class _GuidelineDetailPage extends StatelessWidget {
             title: 'বন্যা নির্দেশিকা',
             subtitle: 'বন্যার আগে, সময়ে ও পরে করণীয়',
           ),
+          const SizedBox(height: 12),
+          const _DisasterMediaSection(
+            videoAsset: 'assets/videos/flood guideline.mp4',
+            audioAsset: 'audios/flood guideline.MP3',
+          ),
           const SizedBox(height: 8),
           const _GuidelineTile(
             title: 'বন্যার আগে প্রস্তুতি',
@@ -757,6 +780,11 @@ class _GuidelineDetailPage extends StatelessWidget {
             title: 'ভূমিকম্প নির্দেশিকা',
             subtitle: 'ভূমিকম্পের আগে, সময়ে ও পরে করণীয়',
           ),
+          const SizedBox(height: 12),
+          const _DisasterMediaSection(
+            videoAsset: 'assets/videos/earthquake guideline.mp4',
+            audioAsset: 'audios/earthquake guideline.MP3',
+          ),
           const SizedBox(height: 8),
           const _GuidelineTile(
             title: 'ভূমিকম্পের আগে প্রস্তুতি',
@@ -826,6 +854,11 @@ class _GuidelineDetailPage extends StatelessWidget {
             title: 'অগ্নিকাণ্ড নির্দেশিকা',
             subtitle: 'আগুনের আগে, সময়ে ও পরে করণীয়',
           ),
+          const SizedBox(height: 12),
+          const _DisasterMediaSection(
+            videoAsset: 'assets/videos/fire_guideline.mp4',
+            audioAsset: 'audios/fire_guideline.MP3',
+          ),
           const SizedBox(height: 8),
           const _GuidelineTile(
             title: 'অগ্নিকাণ্ডের আগে প্রস্তুতি',
@@ -888,6 +921,121 @@ class _GuidelineDetailPage extends StatelessWidget {
 
           const SizedBox(height: 16),
         ]; // end case 5
+      case 6: // জলোচ্ছ্বাস
+        return [
+          const _SectionHeader(
+            icon: Icons.tsunami_rounded,
+            color: Color(0xFF0891B2),
+            title: 'জলোচ্ছ্বাস নির্দেশিকা',
+            subtitle: 'আগে, সময়ে ও পরে করণীয়',
+          ),
+          const SizedBox(height: 12),
+          const _DisasterMediaSection(
+            videoAsset: 'assets/videos/tsnunami_guideline.mp4',
+            audioAsset: 'audios/tsunami_guideline.MP3',
+          ),
+          const SizedBox(height: 8),
+          const _GuidelineTile(
+            title: 'জলোচ্ছ্বাসের আগে প্রস্তুতি',
+            icon: Icons.inventory_2_rounded,
+            accentColor: Color(0xFF0891B2),
+            groups: [
+              _GuidelineGroup(
+                heading: 'আগাম সতর্কতা ও পরিকল্পনা',
+                emoji: '📻',
+                items: [
+                  'বাংলাদেশ আবহাওয়া অধিদপ্তর (BMD)-এর সতর্কতা ও বন্দর সংকেত নিয়মিত শুনুন।',
+                  'জলোচ্ছ্বাস-প্রবণ উপকূলীয় এলাকায় বাস করলে নিকটস্থ আশ্রয়কেন্দ্র আগে থেকে চিহ্নিত করুন।',
+                  'উঁচু স্থানে যাওয়ার পথ ও বিকল্প পথ পরিবারের সবাইকে জানিয়ে রাখুন।',
+                  'জরুরি কিট প্রস্তুত রাখুন — বিশুদ্ধ পানি, শুকনা খাবার, টর্চ, প্রাথমিক চিকিৎসা ও ওষুধ।',
+                  'মূল্যবান কাগজপত্র ও পরিচয়পত্র জলরোধী ব্যাগে সংরক্ষণ করুন।',
+                  'গবাদি পশু নিরাপদ উঁচু জায়গায় বাঁধার পরিকল্পনা আগে থেকে করুন।',
+                ],
+              ),
+              _GuidelineGroup(
+                heading: 'ঘর ও সম্পদ সুরক্ষা',
+                emoji: '🏠',
+                items: [
+                  'ঘরের গুরুত্বপূর্ণ জিনিসপত্র ও খাদ্যশস্য উপরের তলায় বা উঁচু আলমারিতে রাখুন।',
+                  'বিদ্যুৎ, গ্যাস ও পানির মেইন সুইচ বন্ধ রাখার পদ্ধতি পরিবারের সবাইকে জানান।',
+                  'নৌকা ও মৎস্যসরঞ্জাম শক্তভাবে বেঁধে নিরাপদ স্থানে রাখুন।',
+                  'প্রতিবেশী ও বয়স্ক ব্যক্তিদের সতর্ক করুন এবং সহায়তার ব্যবস্থা রাখুন।',
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const _GuidelineTile(
+            title: 'জলোচ্ছ্বাসের সময় করণীয়',
+            icon: Icons.warning_amber_rounded,
+            accentColor: Color(0xFFEA580C),
+            groups: [
+              _GuidelineGroup(
+                heading: 'তাৎক্ষণিক পদক্ষেপ',
+                emoji: '🚨',
+                items: [
+                  'সতর্কসংকেত পেলে সঙ্গে সঙ্গে উঁচু স্থান বা আশ্রয়কেন্দ্রে যান — দেরি করবেন না।',
+                  'জলোচ্ছ্বাসের পানিতে কখনো হাঁটবেন না বা সাঁতার কাটবেন না — স্রোতে ভেসে যাওয়ার ঝুঁকি আছে।',
+                  'শিশু, গর্ভবতী নারী, বয়স্ক ও প্রতিবন্ধীদের আগে নিরাপদ স্থানে নিয়ে যান।',
+                  'কর্তৃপক্ষের নির্দেশ না পাওয়া পর্যন্ত উঁচু স্থানেই থাকুন।',
+                  'মোবাইল ফোন চার্জ রেখে জরুরি নম্বরে (৯৯৯, ১০৯০) সংযোগ রাখুন।',
+                  'ভাসমান গাছপালা, ধ্বংসাবশেষ ও বিদ্যুতের তার থেকে নিরাপদ দূরত্বে থাকুন।',
+                ],
+              ),
+              _GuidelineGroup(
+                heading: 'আশ্রয়কেন্দ্রে করণীয়',
+                emoji: '🏥',
+                items: [
+                  'আশ্রয়কেন্দ্রে পৌঁছে নাম ও পরিবারের তথ্য নিবন্ধন করুন।',
+                  'খাবার পানি ও স্যানিটেশন সুবিধা সুশৃঙ্খলভাবে ব্যবহার করুন।',
+                  'আহত ব্যক্তিদের স্বাস্থ্যকর্মীর কাছে নিয়ে যান।',
+                  'মহিলা ও শিশুদের জন্য আলাদা স্থানের ব্যবস্থা নিশ্চিত করুন।',
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const _GuidelineTile(
+            title: 'জলোচ্ছ্বাসের পরে করণীয়',
+            icon: Icons.restore_rounded,
+            accentColor: Color(0xFF059669),
+            groups: [
+              _GuidelineGroup(
+                heading: 'ঘরে ফেরার আগে',
+                emoji: '🏠',
+                items: [
+                  'কর্তৃপক্ষের অনুমতি না পাওয়া পর্যন্ত বাড়িতে ফিরবেন না।',
+                  'ঘরে ঢোকার আগে কাঠামোগত ক্ষতি পরীক্ষা করুন — ছাদ, দেওয়াল ও মেঝে দেখুন।',
+                  'গ্যাস লিক আছে কিনা পরীক্ষা করুন — গন্ধ পেলে বের হয়ে কর্তৃপক্ষকে জানান।',
+                  'বিদ্যুৎ সংযোগ পুনরায় চালু করার আগে বিদ্যুৎ বিভাগের অনুমোদন নিন।',
+                ],
+              ),
+              _GuidelineGroup(
+                heading: 'স্বাস্থ্য ও স্যানিটেশন',
+                emoji: '🧼',
+                items: [
+                  'সব পানীয় পানি ফুটিয়ে নিন বা বিশুদ্ধকরণ ট্যাবলেট ব্যবহার করুন।',
+                  'লবণাক্ত ও দূষিত পানির সংস্পর্শে আসা সব খাবার ও পানীয় ফেলে দিন।',
+                  'সাপ, কুকুর ও বাস্তুচ্যুত প্রাণী থেকে সতর্ক থাকুন।',
+                  'ডায়রিয়া, কলেরা ও চর্মরোগ প্রতিরোধে পরিচ্ছন্নতা বজায় রাখুন।',
+                  'ডেঙ্গু ও ম্যালেরিয়া প্রতিরোধে জমা পানি ও মশার বিরুদ্ধে সচেতন থাকুন।',
+                ],
+              ),
+              _GuidelineGroup(
+                heading: 'পুনর্বাসন ও সহায়তা',
+                emoji: '🤝',
+                items: [
+                  'ক্ষয়ক্ষতির তথ্য ছবিসহ স্থানীয় ইউপি বা জেলা প্রশাসনে জমা দিন।',
+                  'সরকারি ত্রাণ ও পুনর্বাসন কার্যক্রমে নাম নিবন্ধন করুন।',
+                  'মৎস্যজীবীরা নৌকা ও সরঞ্জামের ক্ষতি কর্তৃপক্ষকে জানান — সহায়তা পেতে পারেন।',
+                  'মানসিক আঘাত (PTSD) স্বাভাবিক — প্রয়োজনে কাউন্সেলিং সেবা নিন।',
+                  'প্রতিবেশীদের সাথে মিলে সম্প্রদায়-ভিত্তিক পুনর্গঠনে অংশ নিন।',
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+        ]; // end case 6
       default:
         return [];
     }
@@ -1464,6 +1612,291 @@ class _QuickReminderCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ── Disaster Media Section ─────────────────────────────────────────────────────
+
+class _DisasterMediaSection extends StatefulWidget {
+  /// Full Flutter asset path, e.g. 'assets/videos/cyclone guideline.mp4'
+  final String videoAsset;
+
+  /// Path relative to assets root for AssetSource, e.g. 'audios/cyclone guideline.MP3'
+  final String audioAsset;
+
+  const _DisasterMediaSection({
+    required this.videoAsset,
+    required this.audioAsset,
+  });
+
+  @override
+  State<_DisasterMediaSection> createState() => _DisasterMediaSectionState();
+}
+
+class _DisasterMediaSectionState extends State<_DisasterMediaSection> {
+  // Video – nullable; only created when user taps play
+  VideoPlayerController? _videoCtrl;
+  bool _videoLoading = false;
+  bool _videoReady = false;
+  bool _videoError = false;
+
+  // Audio
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool _audioPlaying = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _audioPlayer.onPlayerComplete.listen((_) {
+      if (mounted) setState(() => _audioPlaying = false);
+    });
+  }
+
+  @override
+  void dispose() {
+    _videoCtrl?.dispose();
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  // ── Video helpers ─────────────────────────────────────────────────────────
+
+  Future<void> _onTapVideo() async {
+    if (_videoLoading) return;
+
+    // Already ready → toggle play/pause
+    if (_videoReady && _videoCtrl != null) {
+      if (_videoCtrl!.value.isPlaying) {
+        await _videoCtrl!.pause();
+      } else {
+        await _videoCtrl!.play();
+      }
+      setState(() {});
+      return;
+    }
+
+    // Lazy init on first tap
+    setState(() {
+      _videoLoading = true;
+      _videoError = false;
+    });
+
+    try {
+      // Copy asset to a temp file so VideoPlayerController.file() can handle
+      // large videos that Android's AssetManager cannot stream reliably.
+      final fileName = widget.videoAsset.split('/').last;
+      final tmpDir = await getTemporaryDirectory();
+      final tmpFile = File('${tmpDir.path}/$fileName');
+
+      if (!tmpFile.existsSync()) {
+        final byteData = await rootBundle.load(widget.videoAsset);
+        await tmpFile.writeAsBytes(
+          byteData.buffer.asUint8List(
+            byteData.offsetInBytes,
+            byteData.lengthInBytes,
+          ),
+          flush: true,
+        );
+      }
+
+      final ctrl = VideoPlayerController.file(tmpFile);
+      _videoCtrl = ctrl;
+
+      await ctrl.initialize();
+      if (!mounted) {
+        ctrl.dispose();
+        return;
+      }
+      ctrl.addListener(() {
+        if (mounted) setState(() {});
+      });
+      setState(() {
+        _videoLoading = false;
+        _videoReady = true;
+      });
+      await ctrl.play();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _videoLoading = false;
+          _videoError = true;
+        });
+      }
+    }
+  }
+
+  // ── Audio helpers ─────────────────────────────────────────────────────────
+
+  Future<void> _toggleAudio() async {
+    if (_audioPlaying) {
+      await _audioPlayer.stop();
+      setState(() => _audioPlaying = false);
+    } else {
+      await _audioPlayer.play(AssetSource(widget.audioAsset));
+      setState(() => _audioPlaying = true);
+    }
+  }
+
+  // ── Build ─────────────────────────────────────────────────────────────────
+
+  @override
+  Widget build(BuildContext context) {
+    final isPlaying = _videoCtrl?.value.isPlaying ?? false;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // ── Video card ──────────────────────────────────────────────────────
+        ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            color: Colors.black,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Video surface or 16:9 placeholder
+                _videoReady && _videoCtrl != null
+                    ? AspectRatio(
+                        aspectRatio: _videoCtrl!.value.aspectRatio,
+                        child: VideoPlayer(_videoCtrl!),
+                      )
+                    : const AspectRatio(
+                        aspectRatio: 16 / 9,
+                        child: SizedBox.expand(),
+                      ),
+
+                // Loading spinner (only while initializing)
+                if (_videoLoading)
+                  const CircularProgressIndicator(color: Colors.white70),
+
+                // Error state
+                if (_videoError)
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: Colors.white60,
+                        size: 36,
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'ভিডিও লোড হয়নি',
+                        style: TextStyle(color: Colors.white60),
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () {
+                          _videoCtrl?.dispose();
+                          _videoCtrl = null;
+                          setState(() => _videoError = false);
+                          _onTapVideo();
+                        },
+                        child: const Text(
+                          'আবার চেষ্টা করুন',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                // Play button overlay (hidden while playing or loading)
+                if (!_videoLoading && !_videoError)
+                  GestureDetector(
+                    onTap: _onTapVideo,
+                    child: AnimatedOpacity(
+                      opacity: isPlaying ? 0.0 : 1.0,
+                      duration: const Duration(milliseconds: 200),
+                      child: Container(
+                        width: 64,
+                        height: 64,
+                        decoration: const BoxDecoration(
+                          color: Color(0xCC000000),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.play_arrow_rounded,
+                          color: Colors.white,
+                          size: 38,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // Tap-to-pause overlay when playing
+                if (isPlaying)
+                  Positioned.fill(
+                    child: GestureDetector(
+                      onTap: _onTapVideo,
+                      behavior: HitTestBehavior.translucent,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+
+        // Progress bar (visible only once video is ready)
+        if (_videoReady && _videoCtrl != null)
+          VideoProgressIndicator(
+            _videoCtrl!,
+            allowScrubbing: true,
+            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+            colors: const VideoProgressColors(
+              playedColor: Color(0xFF2563EB),
+              bufferedColor: Color(0xFFBFDBFE),
+              backgroundColor: Color(0xFFE2E8F0),
+            ),
+          ),
+
+        const SizedBox(height: 10),
+
+        // ── Audio button ────────────────────────────────────────────────────
+        GestureDetector(
+          onTap: _toggleAudio,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+            decoration: BoxDecoration(
+              color: _audioPlaying
+                  ? const Color(0xFFEFF6FF)
+                  : const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: _audioPlaying
+                    ? const Color(0xFF2563EB)
+                    : const Color(0xFFCBD5E1),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  _audioPlaying
+                      ? Icons.stop_circle_rounded
+                      : Icons.headphones_rounded,
+                  color: _audioPlaying
+                      ? const Color(0xFF2563EB)
+                      : const Color(0xFF475569),
+                  size: 22,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  _audioPlaying ? 'অডিও বন্ধ করুন' : 'অডিও গাইড শুনুন',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: _audioPlaying
+                        ? const Color(0xFF2563EB)
+                        : const Color(0xFF475569),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
