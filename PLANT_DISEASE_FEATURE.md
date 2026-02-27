@@ -4,6 +4,39 @@
 
 Added plant disease detection feature in the Krishok (Farmers) section that allows farmers to detect plant diseases by taking photos with their camera or selecting from gallery.
 
+## Supported Plants & Diseases
+
+The model detects **5 types of leaves** with a total of **14 classes** (including healthy and diseased states):
+
+### 1. Apple (আপেল) - 3 classes
+
+- Black rot (কালো পচা)
+- Cedar apple rust (সিডার আপেল মরিচা)
+- Healthy (সুস্থ)
+
+### 2. Corn/Maize (ভুট্টা) - 3 classes
+
+- Common rust (সাধারণ মরিচা)
+- Northern Leaf Blight (উত্তর পাতার ব্লাইট)
+- Healthy (সুস্থ)
+
+### 3. Pepper/Bell Pepper (মরিচ) - 2 classes
+
+- Bacterial spot (ব্যাকটেরিয়াল স্পট)
+- Healthy (সুস্থ)
+
+### 4. Potato (আলু) - 3 classes
+
+- Early blight (আর্লি ব্লাইট)
+- Late blight (লেট ব্লাইট)
+- Healthy (সুস্থ)
+
+### 5. Tomato (টমেটো) - 3 classes
+
+- Late blight (লেট ব্লাইট)
+- Yellow Leaf Curl Virus (হলুদ পাতা কার্ল ভাইরাস)
+- Healthy (সুস্থ)
+
 ## Changes Made
 
 ### 1. Dependencies Added

@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import 'providers/app_provider.dart';
 import 'services/safety_service.dart';
+import 'services/mental_health_service.dart';
+import 'models/mental_health_assessment.dart';
 import 'theme.dart';
 import 'widgets/disaster_app_bar.dart';
 
@@ -21,6 +23,13 @@ class _WomenSafetyPageState extends State<WomenSafetyPage> {
   final _formKey = GlobalKey<FormState>();
   bool _alertSent = false;
   bool _busy = false;
+
+  // Mental Health Assessment
+  final _mentalHealthFormKey = GlobalKey<FormState>();
+  final Map<String, int> _mentalHealthAnswers = {};
+  bool _assessmentSubmitted = false;
+  bool _assessmentBusy = false;
+  MentalHealthResult? _assessmentResult;
 
   @override
   void initState() {
@@ -75,6 +84,72 @@ class _WomenSafetyPageState extends State<WomenSafetyPage> {
     }
   }
 
+  Future<void> _submitMentalHealthAssessment() async {
+    if (!_mentalHealthFormKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('দয়া করে সমস্ত প্রশ্নের উত্তর দিন')),
+      );
+      return;
+    }
+
+    setState(() => _assessmentBusy = true);
+
+    try {
+      final assessment = MentalHealthAssessment(
+        schoolingStatus: _mentalHealthAnswers['schoolingStatus'] ?? 0,
+        mediaExposure: _mentalHealthAnswers['mediaExposure'] ?? 0,
+        physicalAbuse: _mentalHealthAnswers['physicalAbuse'] ?? 0,
+        sexualAbuse: _mentalHealthAnswers['sexualAbuse'] ?? 0,
+        academicPerformance: _mentalHealthAnswers['academicPerformance'] ?? 0,
+        freedomToMove: _mentalHealthAnswers['freedomToMove'] ?? 0,
+        expressionOfOpinion: _mentalHealthAnswers['expressionOfOpinion'] ?? 0,
+        communicationWithParents:
+            _mentalHealthAnswers['communicationWithParents'] ?? 0,
+        communicationWithFriends:
+            _mentalHealthAnswers['communicationWithFriends'] ?? 0,
+        confrontWrongActs: _mentalHealthAnswers['confrontWrongActs'] ?? 0,
+        engagedMarriageFixed: _mentalHealthAnswers['engagedMarriageFixed'] ?? 0,
+        discussionOfSexualProblems:
+            _mentalHealthAnswers['discussionOfSexualProblems'] ?? 0,
+        discussionAboutRelationship:
+            _mentalHealthAnswers['discussionAboutRelationship'] ?? 0,
+        medicalSymptoms: _mentalHealthAnswers['medicalSymptoms'] ?? 0,
+        impulsiveBehaviour: _mentalHealthAnswers['impulsiveBehaviour'] ?? 0,
+        familyProblems: _mentalHealthAnswers['familyProblems'] ?? 0,
+        divorce: _mentalHealthAnswers['divorce'] ?? 0,
+        partnerAbuse: _mentalHealthAnswers['partnerAbuse'] ?? 0,
+        substanceAbuse: _mentalHealthAnswers['substanceAbuse'] ?? 0,
+        relationshipProblems: _mentalHealthAnswers['relationshipProblems'] ?? 0,
+        peerPressure: _mentalHealthAnswers['peerPressure'] ?? 0,
+      );
+
+      final result = await MentalHealthService.assessMentalHealth(assessment);
+
+      if (mounted) {
+        setState(() {
+          _assessmentResult = result;
+          _assessmentSubmitted = true;
+          _assessmentBusy = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _assessmentBusy = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('ত্রুটি: $e')));
+      }
+    }
+  }
+
+  void _resetMentalHealthAssessment() {
+    setState(() {
+      _mentalHealthAnswers.clear();
+      _assessmentSubmitted = false;
+      _assessmentResult = null;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -108,6 +183,25 @@ class _WomenSafetyPageState extends State<WomenSafetyPage> {
             onEmergency: _sendEmergency,
             onSafe: _sendSafe,
             onResend: _sendEmergency,
+          ),
+
+          const SizedBox(height: 28),
+
+          // ── Mental Health Assessment ────────────────────────────────────
+          const _SectionHeader(
+            title: 'মানসিক স্বাস্থ্য মূল্যায়ন',
+            icon: Icons.psychology_rounded,
+            color: Color(0xFF6A1B9A),
+          ),
+          const SizedBox(height: 14),
+          _MentalHealthAssessmentCard(
+            formKey: _mentalHealthFormKey,
+            answers: _mentalHealthAnswers,
+            submitted: _assessmentSubmitted,
+            busy: _assessmentBusy,
+            result: _assessmentResult,
+            onSubmit: _submitMentalHealthAssessment,
+            onReset: _resetMentalHealthAssessment,
           ),
 
           const SizedBox(height: 28),
@@ -661,6 +755,461 @@ class _GuidelineCardState extends State<_GuidelineCard> {
                   color: Colors.black54,
                   height: 1.6,
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Mental Health Assessment Card ─────────────────────────────────────────────
+
+class _MentalHealthAssessmentCard extends StatelessWidget {
+  final GlobalKey<FormState> formKey;
+  final Map<String, int> answers;
+  final bool submitted;
+  final bool busy;
+  final MentalHealthResult? result;
+  final VoidCallback onSubmit;
+  final VoidCallback onReset;
+
+  const _MentalHealthAssessmentCard({
+    required this.formKey,
+    required this.answers,
+    required this.submitted,
+    required this.busy,
+    required this.result,
+    required this.onSubmit,
+    required this.onReset,
+  });
+
+  static const _purple = Color(0xFF6A1B9A);
+
+  @override
+  Widget build(BuildContext context) {
+    if (submitted && result != null) {
+      return _buildResultCard();
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _purple.withValues(alpha: 0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: _purple.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(18),
+      child: Form(
+        key: formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.info_outline, color: _purple, size: 20),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'এই মূল্যায়ন আপনার মানসিক স্বাস্থ্য পরীক্ষা করতে সাহায্য করবে',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.black54,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Questions
+            ...mentalHealthQuestions.asMap().entries.map((entry) {
+              final index = entry.key;
+              final question = entry.value;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${index + 1}. ${question.question}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF0D1B2A),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<int>(
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: _purple.withValues(alpha: 0.05),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(
+                            color: _purple.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(
+                            color: _purple.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                            color: _purple,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                      hint: const Text(
+                        'নির্বাচন করুন',
+                        style: TextStyle(fontSize: 12, color: Colors.black38),
+                      ),
+                      value: answers[question.field],
+                      items: question.options.asMap().entries.map((optEntry) {
+                        return DropdownMenuItem<int>(
+                          value: optEntry.key,
+                          child: Text(
+                            optEntry.value,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          answers[question.field] = value;
+                        }
+                      },
+                      validator: (value) {
+                        if (value == null) {
+                          return 'অনুগ্রহ করে একটি উত্তর নির্বাচন করুন';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
+              );
+            }),
+
+            const SizedBox(height: 16),
+
+            // Submit button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: busy ? null : onSubmit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _purple,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 3,
+                  shadowColor: _purple.withValues(alpha: 0.4),
+                ),
+                icon: busy
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Icon(Icons.send_rounded),
+                label: const Text(
+                  'মূল্যায়ন জমা দিন',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResultCard() {
+    final isAtRisk = result!.isAtRisk;
+    final cardColor = isAtRisk
+        ? const Color(0xFFFFEBEE)
+        : const Color(0xFFE8F5E9);
+    final borderColor = isAtRisk
+        ? const Color(0xFFD32F2F)
+        : const Color(0xFF2E7D32);
+    final iconColor = isAtRisk
+        ? const Color(0xFFD32F2F)
+        : const Color(0xFF2E7D32);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor.withValues(alpha: 0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: borderColor.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Result header
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: cardColor,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: borderColor),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  isAtRisk
+                      ? Icons.warning_amber_rounded
+                      : Icons.check_circle_rounded,
+                  color: iconColor,
+                  size: 48,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  result!.prediction,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: iconColor,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'ঝুঁকির স্তর: ${result!.riskLevel}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: iconColor,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'সম্ভাবনা: ${result!.probability.toStringAsFixed(1)}%',
+                  style: const TextStyle(fontSize: 13, color: Colors.black54),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          // Guidance
+          if (isAtRisk) ...[
+            const Text(
+              '🌟 মানসিক স্বাস্থ্য উন্নতির উপায়:',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF0D1B2A),
+              ),
+            ),
+            const SizedBox(height: 10),
+            _buildGuidanceItem(
+              '১. পেশাদার সাহায্য নিন',
+              'একজন মানসিক স্বাস্থ্য বিশেষজ্ঞের সাথে কথা বলুন',
+            ),
+            _buildGuidanceItem(
+              '২. বিশ্বস্ত কারো সাথে শেয়ার করুন',
+              'আপনার অনুভূতি পরিবার বা বন্ধুদের সাথে ভাগ করুন',
+            ),
+            _buildGuidanceItem(
+              '৩. স্বাস্থ্যকর অভ্যাস গড়ুন',
+              'নিয়মিত ব্যায়াম, পর্যাপ্ত ঘুম এবং স্বাস্থ্যকর খাবার খান',
+            ),
+            _buildGuidanceItem(
+              '৪. শখ এবং আগ্রহের চর্চা করুন',
+              'যা আপনাকে আনন্দ দেয় তা করার চেষ্টা করুন',
+            ),
+            const SizedBox(height: 16),
+
+            // Emergency contacts
+            const Text(
+              '📞 জরুরি যোগাযোগ:',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF0D1B2A),
+              ),
+            ),
+            const SizedBox(height: 10),
+            _buildContactItem(
+              'জাতীয় মানসিক স্বাস্থ্য ইনস্টিটিউট',
+              '০২-৯০১১৬৩৯',
+            ),
+            _buildContactItem('কান পেতে রই (সুইসাইড প্রিভেনশন)', '০৯৬৩৮৯৮৯৮৯৮'),
+            _buildContactItem('মনের বন্ধু হেল্পলাইন', '০১৭৭৯৫৫৪৩৯২'),
+          ] else ...[
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE1F5FE),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(
+                        Icons.favorite_rounded,
+                        color: Color(0xFFD81B60),
+                        size: 20,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'অনুপ্রেরণামূলক বার্তা',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0D1B2A),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    '🌸 আপনার মানসিক স্বাস্থ্য ভালো! নিজের যত্ন নেওয়া চালিয়ে যান।\n\n'
+                    '💪 মনে রাখবেন, আপনি শক্তিশালী এবং সক্ষম। প্রতিটি দিন নতুন সম্ভাবনা নিয়ে আসে।\n\n'
+                    '🌟 নিজের প্রতি সদয় হোন এবং ছোট ছোট সাফল্য উদযাপন করুন।\n\n'
+                    '💙 যদি কখনো কারো সাথে কথা বলার প্রয়োজন হয়, আমরা এখানেই আছি।',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.black87,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 18),
+
+          // Reset button
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: onReset,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _purple,
+                side: const BorderSide(color: _purple),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text(
+                'নতুন মূল্যায়ন করুন',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGuidanceItem(String title, String description) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.check_circle, color: Color(0xFF2E7D32), size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF0D1B2A),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  description,
+                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContactItem(String name, String number) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF3E0),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: const Color(0xFFFF6F00).withValues(alpha: 0.3),
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.phone_rounded, color: Color(0xFFFF6F00), size: 18),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF0D1B2A),
+                    ),
+                  ),
+                  Text(
+                    number,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFFFF6F00),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

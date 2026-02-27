@@ -10,7 +10,6 @@ import 'providers/shelter_provider.dart';
 import 'providers/weather_provider.dart';
 import 'providers/forecast_provider.dart';
 import 'services/contact_service.dart';
-import 'services/notification_service.dart';
 import 'services/weather_service.dart';
 import 'theme.dart';
 import 'guidelines_page.dart';
@@ -83,22 +82,6 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
       extendBodyBehindAppBar: true,
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 80), // Lift above bottom nav bar
-        child: FloatingActionButton.extended(
-          heroTag: 'homeTestNotificationFAB',
-          onPressed: () async {
-            final notificationService = NotificationService();
-            await notificationService.testNotification(7);
-          },
-          backgroundColor: Colors.red,
-          icon: const Icon(Icons.notifications_active, color: Colors.white),
-          label: const Text(
-            'Test Notification',
-            style: TextStyle(color: Colors.white),
-          ),
-        ),
-      ),
       appBar: DisasterAppBar(
         title: 'আমার এলাকা',
         showMenuButton: true,
@@ -430,10 +413,10 @@ class _WeatherHeroCard extends StatelessWidget {
                                     children: [
                                       Text(
                                         level == 0
-                                            ? 'কোন সতর্কতা সংকেত নেই'
+                                            ? 'সতর্কতা সংকেত নেই'
                                             : 'নম্বর সংকেত চলছে',
                                         style: TextStyle(
-                                          fontSize: 20,
+                                          fontSize: 16,
                                           fontWeight: FontWeight.w800,
                                           color: lc,
                                         ),

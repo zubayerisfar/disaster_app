@@ -46,27 +46,41 @@ class _ShelterPageState extends State<ShelterPage> {
     final app = context.read<AppProvider>();
     final sp = context.read<ShelterProvider>();
 
-    // District changed → move map to district centre immediately
+    // District changed → move map to user's location (if available) or district centre
     if (_lastDistrict != null && _lastDistrict != app.selectedDistrict) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        _mapController.move(LatLng(app.latitude, app.longitude), 10);
+        if (app.hasUserLocation) {
+          _mapController.move(
+            LatLng(app.userLatitude!, app.userLongitude!),
+            13,
+          );
+        } else {
+          _mapController.move(LatLng(app.latitude, app.longitude), 10);
+        }
       });
     }
     _lastDistrict = app.selectedDistrict;
 
-    // Shelters just finished loading → zoom into first shelter
+    // Shelters just finished loading → zoom to user location or first shelter
     if (_wasLoading && !sp.isLoading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        final shelters = context.read<ShelterProvider>().shelters;
-        if (shelters.isNotEmpty) {
+        if (app.hasUserLocation) {
           _mapController.move(
-            LatLng(shelters.first.lat, shelters.first.lng),
-            11,
+            LatLng(app.userLatitude!, app.userLongitude!),
+            13,
           );
         } else {
-          _mapController.move(LatLng(app.latitude, app.longitude), 10);
+          final shelters = context.read<ShelterProvider>().shelters;
+          if (shelters.isNotEmpty) {
+            _mapController.move(
+              LatLng(shelters.first.lat, shelters.first.lng),
+              11,
+            );
+          } else {
+            _mapController.move(LatLng(app.latitude, app.longitude), 10);
+          }
         }
       });
     }
@@ -83,8 +97,8 @@ class _ShelterPageState extends State<ShelterPage> {
     );
   }
 
-  List<Marker> _buildMarkers(List<Shelter> shelters) {
-    return shelters
+  List<Marker> _buildMarkers(List<Shelter> shelters, AppProvider app) {
+    final markers = shelters
         .map(
           (s) => Marker(
             point: LatLng(s.lat, s.lng),
@@ -110,6 +124,31 @@ class _ShelterPageState extends State<ShelterPage> {
           ),
         )
         .toList();
+
+    // Add user location marker if GPS location is available
+    if (app.hasUserLocation) {
+      markers.add(
+        Marker(
+          point: LatLng(app.userLatitude!, app.userLongitude!),
+          width: 40,
+          height: 40,
+          child: const Icon(
+            Icons.location_pin,
+            color: Color(0xFFDC2626),
+            size: 40,
+            shadows: [
+              Shadow(
+                color: Colors.black26,
+                blurRadius: 4,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return markers;
   }
 
   void _showShelterSheet(Shelter s) {
@@ -330,8 +369,10 @@ class _ShelterPageState extends State<ShelterPage> {
                   FlutterMap(
                     mapController: _mapController,
                     options: MapOptions(
-                      initialCenter: LatLng(app.latitude, app.longitude),
-                      initialZoom: 10,
+                      initialCenter: app.hasUserLocation
+                          ? LatLng(app.userLatitude!, app.userLongitude!)
+                          : LatLng(app.latitude, app.longitude),
+                      initialZoom: app.hasUserLocation ? 13 : 10,
                       interactionOptions: const InteractionOptions(
                         flags: InteractiveFlag.all,
                       ),
@@ -342,7 +383,7 @@ class _ShelterPageState extends State<ShelterPage> {
                             'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                         userAgentPackageName: 'com.example.disaster_app',
                       ),
-                      MarkerLayer(markers: _buildMarkers(sp.shelters)),
+                      MarkerLayer(markers: _buildMarkers(sp.shelters, app)),
                     ],
                   ),
                   if (sp.isLoading)
@@ -356,6 +397,55 @@ class _ShelterPageState extends State<ShelterPage> {
                         ),
                       ),
                     ),
+                  // Locate Me button
+                  Positioned(
+                    bottom: 16,
+                    right: 16,
+                    child: FloatingActionButton(
+                      onPressed: () async {
+                        if (app.hasUserLocation) {
+                          _mapController.move(
+                            LatLng(app.userLatitude!, app.userLongitude!),
+                            15,
+                          );
+                        } else {
+                          // Capture messenger before async gap
+                          final messenger = ScaffoldMessenger.of(context);
+                          // Fetch location if not available
+                          await app.fetchCurrentLocation();
+                          if (app.hasUserLocation && mounted) {
+                            _mapController.move(
+                              LatLng(app.userLatitude!, app.userLongitude!),
+                              15,
+                            );
+                          } else if (mounted) {
+                            messenger.showSnackBar(
+                              const SnackBar(
+                                content: Text('GPS অবস্থান পাওয়া যায়নি'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      backgroundColor: Colors.white,
+                      elevation: 4,
+                      child: app.isLocating
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: Color(0xFF16A34A),
+                              ),
+                            )
+                          : const Icon(
+                              Icons.my_location_rounded,
+                              color: Color(0xFF16A34A),
+                              size: 26,
+                            ),
+                    ),
+                  ),
                 ],
               ),
             ),

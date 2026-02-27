@@ -16,8 +16,10 @@ class AppProvider extends ChangeNotifier {
   // ──────────────────────────────────────────────────────────────────────────
 
   String _selectedDistrict = 'Dhaka';
-  double _latitude = 23.8103; // default: Dhaka
+  double _latitude = 23.8103; // default: Dhaka (district center)
   double _longitude = 90.4125;
+  double? _userLatitude; // User's actual GPS latitude
+  double? _userLongitude; // User's actual GPS longitude
   String _dateTimeString = '';
   bool _isLocating = false;
   String? _locationError;
@@ -30,6 +32,9 @@ class AppProvider extends ChangeNotifier {
   String get selectedDistrict => _selectedDistrict;
   double get latitude => _latitude;
   double get longitude => _longitude;
+  double? get userLatitude => _userLatitude;
+  double? get userLongitude => _userLongitude;
+  bool get hasUserLocation => _userLatitude != null && _userLongitude != null;
   String get dateTimeString => _dateTimeString;
   bool get isLocating => _isLocating;
   String? get locationError => _locationError;
@@ -77,11 +82,22 @@ class AppProvider extends ChangeNotifier {
         ),
       );
 
-      _latitude = position.latitude;
-      _longitude = position.longitude;
+      // Store user's actual GPS location
+      _userLatitude = position.latitude;
+      _userLongitude = position.longitude;
 
       // Auto-detect nearest district from coordinates
-      _selectedDistrict = _detectNearestDistrict(_latitude, _longitude);
+      _selectedDistrict = _detectNearestDistrict(
+        position.latitude,
+        position.longitude,
+      );
+
+      // Set district center coordinates for API calls
+      final coords = _districtCoords[_selectedDistrict];
+      if (coords != null) {
+        _latitude = coords.$1;
+        _longitude = coords.$2;
+      }
     } catch (e) {
       _locationError = e.toString();
     } finally {
