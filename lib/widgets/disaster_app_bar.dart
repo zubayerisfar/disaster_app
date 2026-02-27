@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../providers/app_provider.dart';
 import '../providers/weather_provider.dart';
 import '../providers/shelter_provider.dart';
+import '../providers/admin_notification_provider.dart';
 
 class DisasterAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -21,19 +22,23 @@ class DisasterAppBar extends StatelessWidget implements PreferredSizeWidget {
   });
 
   @override
-  Size get preferredSize => Size.fromHeight(showMenuButton ? 100 : 76);
+  Size get preferredSize => Size.fromHeight(showMenuButton ? 126 : 102);
 
   @override
   Widget build(BuildContext context) {
     final app = context.watch<AppProvider>();
-    final barHeight = showMenuButton ? 100.0 : 76.0;
+    final toolbarHeight = showMenuButton ? 100.0 : 76.0;
 
-    return ClipRect(
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(22)),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 6.0, sigmaY: 6.0),
         child: Container(
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.65),
+            borderRadius: const BorderRadius.vertical(
+              bottom: Radius.circular(22),
+            ),
             border: const Border(
               bottom: BorderSide(color: Color(0x20E0E7EF), width: 0.5),
             ),
@@ -47,14 +52,20 @@ class DisasterAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
           child: SafeArea(
             bottom: false,
-            child: SizedBox(
-              height: barHeight,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: showMenuButton
-                    ? _homeLayout(context, app)
-                    : _defaultLayout(context, app),
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  height: toolbarHeight,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: showMenuButton
+                        ? _homeLayout(context, app)
+                        : _defaultLayout(context, app),
+                  ),
+                ),
+                const _TickerTape(),
+              ],
             ),
           ),
         ),
@@ -66,11 +77,38 @@ class DisasterAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget _homeLayout(BuildContext context, AppProvider app) {
     return Row(
       children: [
-        // Hamburger
-        IconButton(
-          onPressed: onMenuTap,
-          icon: const Icon(Icons.more_vert, color: Color(0xFF0D1B2A), size: 28),
-          tooltip: 'Menu',
+        // Hamburger with unread-notification dot
+        Consumer<AdminNotificationProvider>(
+          builder: (ctx, notifProvider, _) {
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                IconButton(
+                  onPressed: onMenuTap,
+                  icon: const Icon(
+                    Icons.more_vert,
+                    color: Color(0xFF0D1B2A),
+                    size: 28,
+                  ),
+                  tooltip: 'Menu',
+                ),
+                if (notifProvider.hasUnread)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      width: 9,
+                      height: 9,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE53935),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
         // Centred location + time
         Expanded(
@@ -519,6 +557,111 @@ class _LocationOptionTile extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+// ── Scrolling ticker tape ─────────────────────────────────────────────────────
+
+class _TickerTape extends StatefulWidget {
+  const _TickerTape();
+
+  @override
+  State<_TickerTape> createState() => _TickerTapeState();
+}
+
+class _TickerTapeState extends State<_TickerTape>
+    with SingleTickerProviderStateMixin {
+  AnimationController? _ctrl;
+  String _lastText = '';
+  double _lastWidth = 0;
+
+  static const _style = TextStyle(
+    fontSize: 11.5,
+    color: Color(0xFF1A3A6B),
+    fontWeight: FontWeight.w500,
+    letterSpacing: 0.3,
+  );
+
+  // pixels per second scrolling speed
+  static const double _speed = 52.0;
+
+  double _textWidth(String text) {
+    final tp = TextPainter(
+      text: TextSpan(text: text, style: _style),
+      textDirection: TextDirection.ltr,
+      maxLines: 1,
+    )..layout(minWidth: 0, maxWidth: double.infinity);
+    return tp.width;
+  }
+
+  void _restart(String text, double containerWidth) {
+    _ctrl?.dispose();
+    final tw = _textWidth(text);
+    final total = containerWidth + tw;
+    final ms = (total / _speed * 1000).round().clamp(4000, 60000);
+    _ctrl =
+        AnimationController(
+            vsync: this,
+            duration: Duration(milliseconds: ms),
+          )
+          ..addListener(() {
+            if (mounted) setState(() {});
+          })
+          ..repeat();
+    _lastText = text;
+    _lastWidth = containerWidth;
+  }
+
+  @override
+  void dispose() {
+    _ctrl?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final notifications = context
+        .watch<AdminNotificationProvider>()
+        .notifications;
+    final text = notifications.isEmpty
+        ? '📢  আপনার জেলার সর্বশেষ বিজ্ঞপ্তিগুলো এখানে দেখা যাবে'
+        : '📢  ${notifications.map((n) => n.title).join('   •   ')}   ';
+
+    return LayoutBuilder(
+      builder: (ctx, constraints) {
+        final w = constraints.maxWidth;
+
+        if (_ctrl == null || text != _lastText || (w - _lastWidth).abs() > 1) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && (text != _lastText || (w - _lastWidth).abs() > 1)) {
+              _restart(text, w);
+            }
+          });
+        }
+
+        final value = _ctrl?.value ?? 0.0;
+        final tw = _textWidth(text);
+        final offset = w - value * (w + tw);
+
+        return Container(
+          height: 26,
+          decoration: const BoxDecoration(
+            border: Border(
+              top: BorderSide(color: Color(0x18003A8C), width: 0.8),
+            ),
+            color: Color(0x0E1565C0),
+          ),
+          child: ClipRect(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Transform.translate(
+                offset: Offset(offset, 0),
+                child: Text(text, style: _style, maxLines: 1, softWrap: false),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

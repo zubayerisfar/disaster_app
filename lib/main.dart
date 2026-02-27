@@ -9,6 +9,7 @@ import 'providers/app_provider.dart';
 import 'providers/weather_provider.dart';
 import 'providers/shelter_provider.dart';
 import 'providers/contact_provider.dart';
+import 'providers/admin_notification_provider.dart';
 
 import 'home_page.dart';
 import 'splash_screen.dart';
@@ -18,6 +19,9 @@ import 'guidelines_page.dart';
 import 'volunteer_page.dart';
 import 'women_safety_page.dart';
 import 'settings_page.dart';
+import 'krishok_page.dart';
+import 'notifications_page.dart';
+import 'forecast_page.dart';
 import 'widgets/app_drawer.dart';
 import 'widgets/family_info_form.dart';
 import 'services/family_info_service.dart';
@@ -44,6 +48,9 @@ class DisasterApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => WeatherProvider()),
         ChangeNotifierProvider(create: (_) => ShelterProvider()),
         ChangeNotifierProvider(create: (_) => ContactProvider()),
+        ChangeNotifierProvider(
+          create: (_) => AdminNotificationProvider()..load(),
+        ),
       ],
       child: MaterialApp(
         title: 'দুর্যোগ সেবা',
@@ -142,6 +149,10 @@ class _MainScaffoldState extends State<MainScaffold> {
       _pageIndex = index;
       if (index <= 3) _navIndex = index;
     });
+    // Clear unread badge as soon as user opens the notifications page
+    if (index == 8) {
+      context.read<AdminNotificationProvider>().markAllRead();
+    }
   }
 
   @override
@@ -155,6 +166,9 @@ class _MainScaffoldState extends State<MainScaffold> {
       RepaintBoundary(child: VolunteerPage(onMenuTap: _openDrawer)),
       RepaintBoundary(child: WomenSafetyPage(onMenuTap: _openDrawer)),
       RepaintBoundary(child: SettingsPage(onMenuTap: _openDrawer)),
+      RepaintBoundary(child: KrishokPage(onMenuTap: _openDrawer)),
+      RepaintBoundary(child: NotificationsPage(onMenuTap: _openDrawer)),
+      RepaintBoundary(child: ForecastPage(onMenuTap: _openDrawer)),
     ];
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _notificationService.initialize(context, _navigateToGuidelines);
@@ -218,11 +232,15 @@ class _MainScaffoldState extends State<MainScaffold> {
       extendBodyBehindAppBar: true,
       drawer: AppDrawer(currentIndex: _pageIndex, onNavigate: _onNavigate),
       body: IndexedStack(index: _pageIndex, children: _pages),
-      bottomNavigationBar: ClipRect(
+      bottomNavigationBar: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 6.0, sigmaY: 6.0),
           child: Container(
             decoration: BoxDecoration(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(22),
+              ),
               border: Border(
                 top: BorderSide(
                   color: Colors.white.withValues(alpha: 0.2),

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/admin_notification_provider.dart';
 
 /// Shared Application Drawer
 ///
@@ -78,40 +80,41 @@ class AppDrawer extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 8),
               children: [
+                // 7-day Forecast
                 _DrawerItem(
-                  icon: Icons.home_rounded,
-                  label: 'হোম',
-                  selected: currentIndex == 0,
+                  icon: Icons.wb_sunny_rounded,
+                  label: '৭ দিনের পূর্বাভাস',
+                  selected: currentIndex == 9,
                   onTap: () {
                     Navigator.pop(context);
-                    onNavigate(0);
+                    onNavigate(9);
                   },
                 ),
-                _DrawerItem(
-                  icon: Icons.location_city_rounded,
-                  label: 'আশ্রয়কেন্দ্র',
-                  selected: currentIndex == 1,
-                  onTap: () {
-                    Navigator.pop(context);
-                    onNavigate(1);
+                const Divider(indent: 16, endIndent: 16, height: 24),
+                // Notifications (with unread badge)
+                Consumer<AdminNotificationProvider>(
+                  builder: (ctx, notifProvider, _) {
+                    final unread = notifProvider.unreadCount;
+                    return _DrawerItem(
+                      icon: Icons.notifications_rounded,
+                      label: 'বিজ্ঞপ্তি',
+                      selected: currentIndex == 8,
+                      badge: unread,
+                      onTap: () {
+                        Navigator.pop(context);
+                        onNavigate(8);
+                      },
+                    );
                   },
                 ),
+                const Divider(indent: 16, endIndent: 16, height: 24),
                 _DrawerItem(
-                  icon: Icons.contacts_rounded,
-                  label: 'যোগাযোগ',
-                  selected: currentIndex == 2,
+                  icon: Icons.grass_rounded,
+                  label: 'কৃষক সেবা',
+                  selected: currentIndex == 7,
                   onTap: () {
                     Navigator.pop(context);
-                    onNavigate(2);
-                  },
-                ),
-                _DrawerItem(
-                  icon: Icons.menu_book_rounded,
-                  label: 'নির্দেশিকা',
-                  selected: currentIndex == 3,
-                  onTap: () {
-                    Navigator.pop(context);
-                    onNavigate(3);
+                    onNavigate(7);
                   },
                 ),
                 const Divider(indent: 16, endIndent: 16, height: 24),
@@ -174,6 +177,7 @@ class _DrawerItem extends StatelessWidget {
   final VoidCallback onTap;
   final bool selected;
   final bool comingSoon;
+  final int badge;
 
   const _DrawerItem({
     required this.icon,
@@ -181,6 +185,7 @@ class _DrawerItem extends StatelessWidget {
     required this.onTap,
     this.selected = false,
     this.comingSoon = false,
+    this.badge = 0,
   });
 
   @override
@@ -201,7 +206,23 @@ class _DrawerItem extends StatelessWidget {
       ),
       tileColor: selected ? const Color(0xFFEFF6FF) : Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      trailing: comingSoon
+      trailing: badge > 0
+          ? Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1565C0),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                badge > 99 ? '99+' : '$badge',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            )
+          : comingSoon
           ? Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(

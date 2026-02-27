@@ -12,6 +12,7 @@ import 'services/contact_service.dart';
 import 'services/notification_service.dart';
 import 'theme.dart';
 import 'guidelines_page.dart';
+import 'shelter_page.dart';
 import 'widgets/disaster_app_bar.dart';
 import 'widgets/women_safety_card.dart';
 
@@ -79,7 +80,7 @@ class _HomePageState extends State<HomePage> {
           padding: EdgeInsets.fromLTRB(
             16,
             MediaQuery.of(context).padding.top +
-                100 +
+                126 +
                 20, // top safe area + appbar height + spacing
             16,
             120, // Bottom padding for navigation bar
@@ -1122,7 +1123,7 @@ class _ShelterTile extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           GestureDetector(
-            onTap: () => _openMap(shelter),
+            onTap: () => _openInternalMap(context, shelter),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
@@ -1152,11 +1153,11 @@ class _ShelterTile extends StatelessWidget {
     );
   }
 
-  Future<void> _openMap(Shelter s) async {
-    final uri = Uri.parse(
-      'https://www.google.com/maps/search/?api=1&query=${s.lat},${s.lng}',
+  void _openInternalMap(BuildContext context, Shelter s) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ShelterPage(initialShelter: s)),
     );
-    if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
 }
 

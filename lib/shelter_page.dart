@@ -12,7 +12,10 @@ import 'widgets/disaster_app_bar.dart';
 
 class ShelterPage extends StatefulWidget {
   final VoidCallback? onMenuTap;
-  const ShelterPage({super.key, this.onMenuTap});
+
+  /// When provided, the map zooms to this shelter and shows its detail sheet.
+  final Shelter? initialShelter;
+  const ShelterPage({super.key, this.onMenuTap, this.initialShelter});
 
   @override
   State<ShelterPage> createState() => _ShelterPageState();
@@ -26,7 +29,15 @@ class _ShelterPageState extends State<ShelterPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _loadData();
+      if (!mounted) return;
+      final s = widget.initialShelter;
+      if (s != null) {
+        _mapController.move(LatLng(s.lat, s.lng), 15);
+        _showShelterSheet(s);
+      }
+    });
   }
 
   @override
@@ -308,7 +319,7 @@ class _ShelterPageState extends State<ShelterPage> {
         padding: EdgeInsets.only(
           top:
               MediaQuery.of(context).padding.top +
-              100, // top safe area + appbar height
+              126, // top safe area + appbar height
         ),
         child: Column(
           children: [

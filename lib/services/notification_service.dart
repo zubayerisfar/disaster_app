@@ -67,6 +67,17 @@ class NotificationService {
         await androidImpl.createNotificationChannel(channel);
         debugPrint('✅ Notification channel created');
 
+        // Admin broadcast channel
+        const adminChannel = AndroidNotificationChannel(
+          'admin_notifications',
+          'বিজ্ঞপ্তি',
+          description: 'Admin broadcast notifications',
+          importance: Importance.high,
+          playSound: true,
+          enableVibration: true,
+        );
+        await androidImpl.createNotificationChannel(adminChannel);
+
         // Request permissions for Android 13+
         final granted = await androidImpl.requestNotificationsPermission();
         debugPrint('📱 Notification permission: $granted');
@@ -345,6 +356,45 @@ class NotificationService {
   void _navigateToGuidelines() {
     if (_navigateToGuidelinesCallback != null) {
       _navigateToGuidelinesCallback!();
+    }
+  }
+
+  /// Show a push notification for an admin-sent message
+  Future<void> showAdminNotification({
+    required String title,
+    required String body,
+    required String id,
+  }) async {
+    if (!_isInitialized) return;
+
+    const androidDetails = AndroidNotificationDetails(
+      'admin_notifications',
+      'বিজ্ঞপ্তি',
+      channelDescription: 'Admin broadcast notifications',
+      importance: Importance.high,
+      priority: Priority.high,
+      enableVibration: true,
+      playSound: true,
+      icon: '@mipmap/ic_launcher',
+      color: Color(0xFF1565C0),
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    try {
+      await _notificationsPlugin.show(
+        id.hashCode,
+        title,
+        body,
+        const NotificationDetails(android: androidDetails, iOS: iosDetails),
+        payload: 'admin_notification',
+      );
+    } catch (e) {
+      debugPrint('⚠️ Admin notification error: $e');
     }
   }
 

@@ -300,8 +300,8 @@ class GuidelinesPage extends StatelessWidget {
         padding: EdgeInsets.fromLTRB(
           16,
           MediaQuery.of(context).padding.top +
-              100 +
-              12, // top safe area + appbar height (100 when menu shown)
+              126 +
+              12, // top safe area + appbar height (126 with ticker)
           16,
           120, // Bottom padding for navigation bar
         ),

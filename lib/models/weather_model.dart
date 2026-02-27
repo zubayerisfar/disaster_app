@@ -40,6 +40,30 @@ class DayForecast {
     );
   }
 
+  /// Serialize to a simple map for local cache storage.
+  Map<String, dynamic> toCache() => {
+    'date': date.toIso8601String(),
+    'tempMin': tempMin,
+    'tempMax': tempMax,
+    'humidity': humidity,
+    'windSpeed': windSpeed,
+    'description': description,
+    'iconCode': iconCode,
+    'precipitation': precipitation,
+  };
+
+  /// Deserialize from local cache storage.
+  factory DayForecast.fromCache(Map<String, dynamic> m) => DayForecast(
+    date: DateTime.parse(m['date'] as String),
+    tempMin: (m['tempMin'] as num).toDouble(),
+    tempMax: (m['tempMax'] as num).toDouble(),
+    humidity: (m['humidity'] as num).toDouble(),
+    windSpeed: (m['windSpeed'] as num).toDouble(),
+    description: m['description'] as String,
+    iconCode: m['iconCode'] as String,
+    precipitation: (m['precipitation'] as num).toDouble(),
+  );
+
   /// Full URL for the weather condition icon.
   String get iconUrl => 'https://openweathermap.org/img/wn/$iconCode@2x.png';
 }
@@ -77,6 +101,28 @@ class WeatherData {
       daily: dailyList,
     );
   }
+
+  /// Serialize to a simple map for local cache storage.
+  Map<String, dynamic> toCache() => {
+    'currentTemp': currentTemp,
+    'currentWindSpeed': currentWindSpeed,
+    'currentHumidity': currentHumidity,
+    'currentDescription': currentDescription,
+    'currentIconCode': currentIconCode,
+    'daily': daily.map((d) => d.toCache()).toList(),
+  };
+
+  /// Deserialize from local cache storage.
+  factory WeatherData.fromCache(Map<String, dynamic> m) => WeatherData(
+    currentTemp: (m['currentTemp'] as num).toDouble(),
+    currentWindSpeed: (m['currentWindSpeed'] as num).toDouble(),
+    currentHumidity: (m['currentHumidity'] as num).toDouble(),
+    currentDescription: m['currentDescription'] as String,
+    currentIconCode: m['currentIconCode'] as String,
+    daily: (m['daily'] as List)
+        .map((d) => DayForecast.fromCache(d as Map<String, dynamic>))
+        .toList(),
+  );
 
   String get currentIconUrl =>
       'https://openweathermap.org/img/wn/$currentIconCode@2x.png';
