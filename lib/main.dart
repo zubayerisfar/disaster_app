@@ -10,6 +10,7 @@ import 'providers/weather_provider.dart';
 import 'providers/shelter_provider.dart';
 import 'providers/contact_provider.dart';
 import 'providers/admin_notification_provider.dart';
+import 'providers/forecast_provider.dart';
 
 import 'home_page.dart';
 import 'splash_screen.dart';
@@ -50,6 +51,18 @@ class DisasterApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ContactProvider()),
         ChangeNotifierProvider(
           create: (_) => AdminNotificationProvider()..load(),
+        ),
+        ChangeNotifierProxyProvider<AppProvider, ForecastProvider>(
+          create: (_) => ForecastProvider(),
+          update: (_, app, forecast) {
+            final fp = forecast ?? ForecastProvider();
+            debugPrint(
+              '🔄 main.dart: Updating ForecastProvider with location: '
+              'Lat=${app.latitude}, Lon=${app.longitude}',
+            );
+            fp.fetchForLocation(app.latitude, app.longitude);
+            return fp;
+          },
         ),
       ],
       child: MaterialApp(

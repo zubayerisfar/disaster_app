@@ -319,7 +319,7 @@ class _ShelterPageState extends State<ShelterPage> {
         padding: EdgeInsets.only(
           top:
               MediaQuery.of(context).padding.top +
-              126, // top safe area + appbar height
+              116, // top safe area + appbar height
         ),
         child: Column(
           children: [

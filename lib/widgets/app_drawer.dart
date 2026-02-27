@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/admin_notification_provider.dart';
+import '../models/family_info_model.dart';
+import '../services/family_info_service.dart';
+import '../profile_page.dart';
 
 /// Shared Application Drawer
 ///
@@ -9,7 +12,7 @@ import '../providers/admin_notification_provider.dart';
 ///
 /// [currentIndex] : the currently visible page (0-5)
 /// [onNavigate]   : called with the target page index when user taps an item
-class AppDrawer extends StatelessWidget {
+class AppDrawer extends StatefulWidget {
   final int currentIndex;
   final void Function(int index) onNavigate;
 
@@ -20,7 +23,36 @@ class AppDrawer extends StatelessWidget {
   });
 
   @override
+  State<AppDrawer> createState() => _AppDrawerState();
+}
+
+class _AppDrawerState extends State<AppDrawer> {
+  FamilyInfo? _familyInfo;
+
+  @override
+  void initState() {
+    super.initState();
+    FamilyInfoService().getFamilyInfo().then((info) {
+      if (mounted) setState(() => _familyInfo = info);
+    });
+  }
+
+  void _openProfile(BuildContext context) {
+    Navigator.pop(context); // close drawer
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const ProfilePage())).then((_) {
+      // Reload family info when returning from profile
+      FamilyInfoService().getFamilyInfo().then((info) {
+        if (mounted) setState(() => _familyInfo = info);
+      });
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final int currentIndex = widget.currentIndex;
+    final onNavigate = widget.onNavigate;
     return Drawer(
       backgroundColor: Colors.white,
       child: Column(
@@ -44,32 +76,43 @@ class AppDrawer extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 58,
-                  height: 58,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.health_and_safety_rounded,
-                    color: Colors.white,
-                    size: 32,
+                GestureDetector(
+                  onTap: () => _openProfile(context),
+                  child: Container(
+                    width: 58,
+                    height: 58,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        width: 2,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.person_rounded,
+                      color: Colors.white,
+                      size: 32,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 14),
-                const Text(
-                  'দুর্যোগ সেবা',
-                  style: TextStyle(
+                Text(
+                  _familyInfo?.headOfFamilyName?.isNotEmpty == true
+                      ? _familyInfo!.headOfFamilyName!
+                      : 'দুর্যোগ সেবা',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'Bangladesh Disaster Management',
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                Text(
+                  _familyInfo?.phoneNumber?.isNotEmpty == true
+                      ? _familyInfo!.phoneNumber!
+                      : 'Bangladesh Disaster Management',
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
                 ),
               ],
             ),

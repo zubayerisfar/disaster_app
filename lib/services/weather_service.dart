@@ -234,6 +234,7 @@ class WeatherService {
       currentDescription: 'overcast clouds',
       currentIconCode: '04d',
       daily: daily,
+      isDemo: true, // Mark as demo data - NEVER cache this!
     );
   }
 

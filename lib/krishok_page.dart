@@ -203,7 +203,7 @@ class KrishokPage extends StatelessWidget {
       body: ListView(
         padding: EdgeInsets.fromLTRB(
           16,
-          MediaQuery.of(context).padding.top + 126 + 12,
+          MediaQuery.of(context).padding.top + 116 + 12,
           16,
           120,
         ),

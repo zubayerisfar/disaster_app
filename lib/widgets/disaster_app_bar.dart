@@ -14,31 +14,33 @@ class DisasterAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool showMenuButton;
   final VoidCallback? onMenuTap;
 
+  /// When true shows the scrolling notification stripe below the toolbar.
+  /// Should only be true on the Home page.
+  final bool showTickerTape;
+
   const DisasterAppBar({
     super.key,
     required this.title,
     this.showMenuButton = false,
     this.onMenuTap,
+    this.showTickerTape = false,
   });
 
   @override
-  Size get preferredSize => Size.fromHeight(showMenuButton ? 126 : 102);
+  Size get preferredSize => Size.fromHeight(116 + (showTickerTape ? 24 : 0));
 
   @override
   Widget build(BuildContext context) {
     final app = context.watch<AppProvider>();
-    final toolbarHeight = showMenuButton ? 100.0 : 76.0;
+    final toolbarHeight = 90.0;
 
     return ClipRRect(
-      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(22)),
+      borderRadius: BorderRadius.zero,
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 6.0, sigmaY: 6.0),
         child: Container(
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.65),
-            borderRadius: const BorderRadius.vertical(
-              bottom: Radius.circular(22),
-            ),
             border: const Border(
               bottom: BorderSide(color: Color(0x20E0E7EF), width: 0.5),
             ),
@@ -64,7 +66,8 @@ class DisasterAppBar extends StatelessWidget implements PreferredSizeWidget {
                         : _defaultLayout(context, app),
                   ),
                 ),
-                const _TickerTape(),
+                if (showTickerTape)
+                  const SizedBox(height: 24, child: _TickerTape()),
               ],
             ),
           ),
@@ -159,8 +162,8 @@ class DisasterAppBar extends StatelessWidget implements PreferredSizeWidget {
             width: 112,
             height: 62,
             decoration: BoxDecoration(
-              color: const Color(0xFFD32F2F),
-              borderRadius: BorderRadius.circular(16),
+              color: const Color.fromARGB(255, 240, 3, 50),
+              borderRadius: BorderRadius.circular(35),
               boxShadow: [
                 BoxShadow(
                   color: Colors.red.withValues(alpha: 0.4),
@@ -173,14 +176,13 @@ class DisasterAppBar extends StatelessWidget implements PreferredSizeWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: const [
-                Icon(Icons.sos_rounded, color: Colors.white, size: 22),
                 SizedBox(height: 2),
                 Text(
                   'জরুরি সাহায্য',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w900,
-                    fontSize: 13,
+                    fontSize: 15,
                     letterSpacing: 0.4,
                   ),
                 ),
@@ -644,7 +646,6 @@ class _TickerTapeState extends State<_TickerTape>
         final offset = w - value * (w + tw);
 
         return Container(
-          height: 26,
           decoration: const BoxDecoration(
             border: Border(
               top: BorderSide(color: Color(0x18003A8C), width: 0.8),

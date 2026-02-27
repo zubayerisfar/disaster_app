@@ -1,35 +1,11 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/app_provider.dart';
+import 'providers/forecast_provider.dart';
+import 'providers/weather_provider.dart';
+import 'models/weather_model.dart';
 import 'widgets/disaster_app_bar.dart';
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Model
-// ──────────────────────────────────────────────────────────────────────────────
-
-class _DayForecast {
-  final DateTime date;
-  final double tempMax;
-  final double tempMin;
-  final double precipitation; // mm
-  final double windSpeed; // km/h
-  final double humidity; // %
-  final int weatherCode; // WMO
-
-  const _DayForecast({
-    required this.date,
-    required this.tempMax,
-    required this.tempMin,
-    required this.precipitation,
-    required this.windSpeed,
-    required this.humidity,
-    required this.weatherCode,
-  });
-}
 
 // ──────────────────────────────────────────────────────────────────────────────
 // WMO code helpers
@@ -86,206 +62,81 @@ final _bnDayNames = {
   DateTime.sunday: 'রবি',
 };
 
+// ── Convert AccuWeather DayForecast to ForecastDay format ──────────────────────
+List<ForecastDay> _convertAccuWeatherToForecast(List<DayForecast> accuDaily) {
+  return accuDaily.map((day) {
+    // Map AccuWeather icon code to WMO-like code
+    int weatherCode = _iconCodeToWMO(day.iconCode);
+
+    return ForecastDay(
+      date: day.date,
+      tempMax: day.tempMax,
+      tempMin: day.tempMin,
+      precipitation: day.precipitation,
+      windSpeed: day.windSpeed,
+      humidity: day.humidity,
+      weatherCode: weatherCode,
+    );
+  }).toList();
+}
+
+// Convert icon codes to approximate WMO weather codes
+int _iconCodeToWMO(String iconCode) {
+  if (iconCode.startsWith('01')) return 0; // clear sky
+  if (iconCode.startsWith('02')) return 2; // partly cloudy
+  if (iconCode.startsWith('03')) return 3; // cloudy
+  if (iconCode.startsWith('04')) return 3; // overcast
+  if (iconCode.startsWith('09')) return 61; // rain
+  if (iconCode.startsWith('10')) return 63; // rain
+  if (iconCode.startsWith('11')) return 95; // thunderstorm
+  if (iconCode.startsWith('13')) return 71; // snow
+  if (iconCode.startsWith('50')) return 45; // fog
+  return 3; // default to cloudy
+}
+
 // ──────────────────────────────────────────────────────────────────────────────
 // Page
 // ──────────────────────────────────────────────────────────────────────────────
 
-class ForecastPage extends StatefulWidget {
+class ForecastPage extends StatelessWidget {
   final VoidCallback? onMenuTap;
   const ForecastPage({super.key, this.onMenuTap});
 
   @override
-  State<ForecastPage> createState() => _ForecastPageState();
-}
-
-class _ForecastPageState extends State<ForecastPage> {
-  List<_DayForecast>? _forecasts;
-  bool _loading = true;
-  String? _error;
-  bool _fromCache = false;
-  DateTime? _cachedAt;
-
-  // Track which district/coords we last fetched for, to avoid refetch
-  String? _lastFetchKey;
-
-  static String _cacheKey(double lat, double lon) =>
-      'forecast_${lat.toStringAsFixed(4)}_${lon.toStringAsFixed(4)}';
-  static String _cacheTimeKey(double lat, double lon) =>
-      'forecast_time_${lat.toStringAsFixed(4)}_${lon.toStringAsFixed(4)}';
-
-  // ── Cache helpers ──────────────────────────────────────────────────────
-
-  Future<List<_DayForecast>?> _loadFromCache(double lat, double lon) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_cacheKey(lat, lon));
-      final ts = prefs.getInt(_cacheTimeKey(lat, lon));
-      if (raw == null || ts == null) return null;
-      final age = DateTime.now()
-          .difference(DateTime.fromMillisecondsSinceEpoch(ts))
-          .inDays;
-      if (age > 7) return null; // expired
-      _cachedAt = DateTime.fromMillisecondsSinceEpoch(ts);
-      final list = jsonDecode(raw) as List;
-      return list.map((e) {
-        final m = e as Map<String, dynamic>;
-        return _DayForecast(
-          date: DateTime.parse(m['date'] as String),
-          weatherCode: (m['weatherCode'] as num?)?.toInt() ?? 0,
-          tempMax: (m['tempMax'] as num?)?.toDouble() ?? 0.0,
-          tempMin: (m['tempMin'] as num?)?.toDouble() ?? 0.0,
-          precipitation: (m['precipitation'] as num?)?.toDouble() ?? 0.0,
-          windSpeed: (m['windSpeed'] as num?)?.toDouble() ?? 0.0,
-          humidity: (m['humidity'] as num?)?.toDouble() ?? 0.0,
-        );
-      }).toList();
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<void> _saveToCache(
-    double lat,
-    double lon,
-    List<_DayForecast> list,
-  ) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final data = list
-          .map(
-            (d) => {
-              'date': d.date.toIso8601String(),
-              'weatherCode': d.weatherCode,
-              'tempMax': d.tempMax,
-              'tempMin': d.tempMin,
-              'precipitation': d.precipitation,
-              'windSpeed': d.windSpeed,
-              'humidity': d.humidity,
-            },
-          )
-          .toList();
-      await prefs.setString(_cacheKey(lat, lon), jsonEncode(data));
-      await prefs.setInt(
-        _cacheTimeKey(lat, lon),
-        DateTime.now().millisecondsSinceEpoch,
-      );
-    } catch (_) {}
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final app = context.read<AppProvider>();
-    final key = '${app.latitude},${app.longitude}';
-    if (key != _lastFetchKey) {
-      _lastFetchKey = key;
-      _fetch(app.latitude, app.longitude);
-    }
-  }
-
-  Future<void> _fetch(double lat, double lon) async {
-    // 1. Try loading from cache immediately for instant offline display
-    final cached = await _loadFromCache(lat, lon);
-    if (cached != null && mounted) {
-      setState(() {
-        _forecasts = cached;
-        _fromCache = true;
-        _loading = false;
-        _error = null;
-      });
-    } else if (mounted) {
-      setState(() {
-        _loading = true;
-        _error = null;
-      });
-    }
-
-    // 2. Try network fetch
-    try {
-      final uri = Uri.parse(
-        'https://api.open-meteo.com/v1/forecast'
-        '?latitude=$lat&longitude=$lon'
-        '&daily=weather_code,temperature_2m_max,temperature_2m_min'
-        ',precipitation_sum,wind_speed_10m_max,relative_humidity_2m_max'
-        '&timezone=auto&forecast_days=7',
-      );
-
-      final res = await http.get(uri).timeout(const Duration(seconds: 15));
-
-      if (res.statusCode == 200) {
-        final json = jsonDecode(res.body) as Map<String, dynamic>;
-        final daily = json['daily'] as Map<String, dynamic>;
-
-        final times = daily['time'] as List;
-        final codes = daily['weather_code'] as List;
-        final maxT = daily['temperature_2m_max'] as List;
-        final minT = daily['temperature_2m_min'] as List;
-        final precip = daily['precipitation_sum'] as List;
-        final wind = daily['wind_speed_10m_max'] as List;
-        final hum = daily['relative_humidity_2m_max'] as List;
-
-        final list = List.generate(times.length, (i) {
-          return _DayForecast(
-            date: DateTime.parse(times[i] as String),
-            weatherCode: (codes[i] as num?)?.toInt() ?? 0,
-            tempMax: (maxT[i] as num?)?.toDouble() ?? 0.0,
-            tempMin: (minT[i] as num?)?.toDouble() ?? 0.0,
-            precipitation: (precip[i] as num?)?.toDouble() ?? 0.0,
-            windSpeed: (wind[i] as num?)?.toDouble() ?? 0.0,
-            humidity: (hum[i] as num?)?.toDouble() ?? 0.0,
-          );
-        });
-
-        await _saveToCache(lat, lon, list);
-        if (mounted) {
-          setState(() {
-            _forecasts = list;
-            _fromCache = false;
-            _cachedAt = null;
-            _loading = false;
-            _error = null;
-          });
-        }
-      } else {
-        // Network failed but we may already have cache
-        if (mounted && _forecasts == null) {
-          setState(() {
-            _error = 'সার্ভার ত্রুটি (${res.statusCode})';
-            _loading = false;
-          });
-        } else if (mounted) {
-          setState(() => _loading = false);
-        }
-      }
-    } catch (e) {
-      if (mounted && _forecasts == null) {
-        setState(() {
-          _error = 'ইন্টারনেট সংযোগ পরীক্ষা করুন';
-          _loading = false;
-        });
-      } else if (mounted) {
-        setState(() => _loading = false);
-      }
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
     final app = context.watch<AppProvider>();
+    final fp = context.watch<ForecastProvider>();
+    final wp = context.watch<WeatherProvider>();
     final districtName =
         AppProvider.districtNamesBangla[app.selectedDistrict] ??
         app.selectedDistrict;
+
+    // Priority: AccuWeather daily → Open-Meteo forecasts
+    final useAccuWeather =
+        !wp.isDemo &&
+        wp.weatherData?.daily != null &&
+        wp.weatherData!.daily.isNotEmpty;
+    final isLoading = useAccuWeather ? wp.isLoading : fp.loading;
+    final hasError = useAccuWeather ? (wp.error != null) : (fp.error != null);
+    final fromCache = useAccuWeather ? wp.fromCache : fp.fromCache;
+    final cachedAt = useAccuWeather ? wp.cachedAt : fp.cachedAt;
+    final dataSource = useAccuWeather ? 'AccuWeather' : 'Open-Meteo';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
       appBar: DisasterAppBar(
         title: '৭ দিনের পূর্বাভাস',
         showMenuButton: true,
-        onMenuTap: widget.onMenuTap,
+        onMenuTap: onMenuTap,
       ),
       body: Builder(
         builder: (ctx) {
-          if (_loading) {
+          // Show loading only if no data available from either source
+          final hasData =
+              useAccuWeather ||
+              (fp.forecasts != null && fp.forecasts!.isNotEmpty);
+
+          if (isLoading && !hasData) {
             return const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -301,21 +152,23 @@ class _ForecastPageState extends State<ForecastPage> {
             );
           }
 
-          if (_error != null) {
+          if (hasError && !hasData) {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.cloud_off_rounded,
                       size: 64,
                       color: Colors.black26,
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      _error!,
+                      useAccuWeather
+                          ? (wp.error ?? 'ত্রুটি ঘটেছে')
+                          : (fp.error ?? 'ত্রুটি ঘটেছে'),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: Colors.black54,
@@ -324,7 +177,10 @@ class _ForecastPageState extends State<ForecastPage> {
                     ),
                     const SizedBox(height: 20),
                     FilledButton.icon(
-                      onPressed: () => _fetch(app.latitude, app.longitude),
+                      onPressed: () async {
+                        await wp.loadWeather(app.latitude, app.longitude);
+                        await fp.refresh(app.latitude, app.longitude);
+                      },
                       icon: const Icon(Icons.refresh_rounded),
                       label: const Text('আবার চেষ্টা করুন'),
                     ),
@@ -334,14 +190,17 @@ class _ForecastPageState extends State<ForecastPage> {
             );
           }
 
-          final forecasts = _forecasts ?? [];
+          // Convert AccuWeather DayForecast to ForecastDay format (or use Open-Meteo directly)
+          final forecasts = useAccuWeather
+              ? _convertAccuWeatherToForecast(wp.weatherData!.daily)
+              : (fp.forecasts ?? []);
 
           return CustomScrollView(
             slivers: [
-              SliverToBoxAdapter(child: SizedBox(height: 12)),
+              const SliverToBoxAdapter(child: SizedBox(height: 12)),
 
               // Offline / cached data banner
-              if (_fromCache && _cachedAt != null)
+              if (fromCache && cachedAt != null)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -365,7 +224,7 @@ class _ForecastPageState extends State<ForecastPage> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'অফলাইন — ${DateFormat('d MMM, h:mm a').format(_cachedAt!.toLocal())} এর সংরক্ষিত ডেটা',
+                              'অফলাইন — ${DateFormat('d MMM, h:mm a').format(cachedAt!.toLocal())} এর সংরক্ষিত ডেটা',
                               style: const TextStyle(
                                 fontSize: 12,
                                 color: Color(0xFFE65100),
@@ -400,7 +259,7 @@ class _ForecastPageState extends State<ForecastPage> {
                       ),
                       const Spacer(),
                       Text(
-                        'Open-Meteo',
+                        dataSource,
                         style: const TextStyle(
                           fontSize: 11,
                           color: Colors.black38,
@@ -412,10 +271,10 @@ class _ForecastPageState extends State<ForecastPage> {
               ),
 
               // Title
-              SliverToBoxAdapter(
+              const SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  child: const Text(
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: Text(
                     '৭ দিনের আবহাওয়া পূর্বাভাস',
                     style: TextStyle(
                       fontSize: 20,
@@ -450,7 +309,7 @@ class _ForecastPageState extends State<ForecastPage> {
 // ──────────────────────────────────────────────────────────────────────────────
 
 class _ForecastCard extends StatelessWidget {
-  final _DayForecast forecast;
+  final ForecastDay forecast;
   final bool isToday;
 
   const _ForecastCard({required this.forecast, required this.isToday});

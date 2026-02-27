@@ -1,20 +1,65 @@
 ﻿import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'models/shelter_model.dart';
+import 'models/weather_model.dart';
 import 'providers/app_provider.dart';
 import 'providers/shelter_provider.dart';
 import 'providers/weather_provider.dart';
+import 'providers/forecast_provider.dart';
 import 'services/contact_service.dart';
 import 'services/notification_service.dart';
+import 'services/weather_service.dart';
 import 'theme.dart';
 import 'guidelines_page.dart';
 import 'shelter_page.dart';
 import 'widgets/disaster_app_bar.dart';
 import 'widgets/women_safety_card.dart';
+
+// ── WMO weather code helpers for Open-Meteo fallback ──────────────────────────
+IconData _wmoIcon(int code) {
+  if (code == 0) return Icons.wb_sunny_rounded;
+  if (code <= 2) return Icons.wb_cloudy_rounded;
+  if (code == 3) return Icons.cloud_rounded;
+  if (code <= 48) return Icons.foggy;
+  if (code <= 57) return Icons.grain;
+  if (code <= 67) return Icons.umbrella_rounded;
+  if (code <= 77) return Icons.ac_unit_rounded;
+  if (code <= 82) return Icons.grain;
+  if (code <= 86) return Icons.ac_unit_rounded;
+  return Icons.thunderstorm_rounded;
+}
+
+Color _wmoColor(int code) {
+  if (code == 0) return const Color(0xFFFF8F00);
+  if (code <= 2) return const Color(0xFFFFB300);
+  if (code == 3) return const Color(0xFF90A4AE);
+  if (code <= 48) return const Color(0xFFB0BEC5);
+  if (code <= 57) return const Color(0xFF64B5F6);
+  if (code <= 67) return const Color(0xFF1565C0);
+  if (code <= 77) return const Color(0xFF80DEEA);
+  if (code <= 82) return const Color(0xFF1E88E5);
+  if (code <= 86) return const Color(0xFF4DD0E1);
+  return const Color(0xFF6A1B9A);
+}
+
+// ── AccuWeather icon code to Flutter icon mapping ──────────────────────────
+IconData _getAccuWeatherIcon(String iconCode) {
+  if (iconCode.startsWith('01')) return Icons.wb_sunny_rounded; // sunny
+  if (iconCode.startsWith('02'))
+    return Icons.wb_cloudy_rounded; // partly cloudy
+  if (iconCode.startsWith('03') || iconCode.startsWith('04'))
+    return Icons.cloud_rounded; // cloudy
+  if (iconCode.startsWith('09') || iconCode.startsWith('10'))
+    return Icons.umbrella_rounded; // rain
+  if (iconCode.startsWith('11'))
+    return Icons.thunderstorm_rounded; // thunderstorm
+  if (iconCode.startsWith('13')) return Icons.ac_unit_rounded; // snow
+  if (iconCode.startsWith('50')) return Icons.foggy; // fog
+  return Icons.wb_cloudy_rounded; // default
+}
 
 class HomePage extends StatefulWidget {
   final VoidCallback? onMenuTap;
@@ -42,7 +87,6 @@ class _HomePageState extends State<HomePage> {
         child: FloatingActionButton.extended(
           heroTag: 'homeTestNotificationFAB',
           onPressed: () async {
-            debugPrint('🧪 Test button pressed');
             final notificationService = NotificationService();
             await notificationService.testNotification(7);
           },
@@ -57,6 +101,7 @@ class _HomePageState extends State<HomePage> {
       appBar: DisasterAppBar(
         title: 'আমার এলাকা',
         showMenuButton: true,
+        showTickerTape: true,
         onMenuTap: widget.onMenuTap,
       ),
       body: RefreshIndicator(
@@ -66,6 +111,10 @@ class _HomePageState extends State<HomePage> {
           final app = context.read<AppProvider>();
           await Future.wait([
             context.read<WeatherProvider>().loadWeather(
+              app.latitude,
+              app.longitude,
+            ),
+            context.read<ForecastProvider>().refresh(
               app.latitude,
               app.longitude,
             ),
@@ -80,8 +129,8 @@ class _HomePageState extends State<HomePage> {
           padding: EdgeInsets.fromLTRB(
             16,
             MediaQuery.of(context).padding.top +
-                126 +
-                20, // top safe area + appbar height + spacing
+                116 +
+                24, // top safe area + appbar height (116) + ticker (24)
             16,
             120, // Bottom padding for navigation bar
           ),
@@ -261,7 +310,30 @@ class _WeatherHeroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final wp = context.watch<WeatherProvider>();
-    final level = wp.warningLevel;
+    final fp = context.watch<ForecastProvider>();
+
+    // Priority: AccuWeather (real/cached) → Open-Meteo (real/cached) → Demo
+    // Use Open-Meteo if AccuWeather is showing demo data
+    final hasRealAccuWeather = !wp.isDemo; // Not demo = real AccuWeather data
+    final useOpenMeteo = !hasRealAccuWeather && fp.currentWeather != null;
+
+    // Determine if showing cached data
+    final showingCache = useOpenMeteo ? fp.fromCache : wp.fromCache;
+
+    // Get current temperature for display
+    final currentTemp = useOpenMeteo
+        ? fp.currentWeather!.temperature
+        : wp.weatherData!.currentTemp;
+    final currentWind = useOpenMeteo
+        ? fp.currentWeather!.windSpeed
+        : wp.weatherData!.currentWindSpeed;
+    final currentHumidity = useOpenMeteo
+        ? fp.currentWeather!.humidity
+        : wp.weatherData!.currentHumidity;
+
+    // Calculate warning level from wind speed
+    final level = WeatherService.calculateWarningLevel(currentWind);
+
     final lc = _lc(level);
     final accent = _alertAccent(level);
     final alert = _alerts[level.clamp(0, 10)];
@@ -342,41 +414,45 @@ class _WeatherHeroCard extends StatelessWidget {
                                   ),
                                 ),
                                 const SizedBox(width: 14),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      level == 0
-                                          ? 'নিরাপদ'
-                                          : 'নম্বর সংকেত চলছে', //'${_bn[level.clamp(0, 10)]} নম্বর সংকেত চলছে',
-                                      style: TextStyle(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.w800,
-                                        color: lc,
+                                Flexible(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        level == 0
+                                            ? 'কোন সতর্কতা সংকেত নেই'
+                                            : 'নম্বর সংকেত চলছে',
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w800,
+                                          color: lc,
+                                        ),
+                                        softWrap: true,
                                       ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.arrow_forward_rounded,
-                                          size: 12,
-                                          color: lc.withValues(alpha: 0.6),
-                                        ),
-                                        const SizedBox(width: 3),
-                                        Text(
-                                          'নির্দেশিকা দেখুন',
-                                          style: TextStyle(
-                                            fontSize: 15,
-                                            color: Colors.black45,
-                                            fontWeight: FontWeight.w500,
+                                      const SizedBox(height: 2),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.arrow_forward_rounded,
+                                            size: 12,
+                                            color: lc.withValues(alpha: 0.6),
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
+                                          const SizedBox(width: 3),
+                                          Text(
+                                            'নির্দেশিকা দেখুন',
+                                            style: TextStyle(
+                                              fontSize: 15,
+                                              color: Colors.black45,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ), // Flexible
                               ],
                             ),
                           ),
@@ -386,7 +462,9 @@ class _WeatherHeroCard extends StatelessWidget {
                       const Spacer(),
 
                       // ── Weather icon ───────────────────────────
-                      if (wp.isLoading && wp.weatherData == null)
+                      if (wp.isLoading &&
+                          wp.weatherData == null &&
+                          fp.currentWeather == null)
                         const SizedBox(
                           width: 24,
                           height: 24,
@@ -394,6 +472,12 @@ class _WeatherHeroCard extends StatelessWidget {
                             color: Color(0xFF90A4AE),
                             strokeWidth: 2,
                           ),
+                        )
+                      else if (useOpenMeteo)
+                        Icon(
+                          _wmoIcon(fp.currentWeather!.weatherCode),
+                          color: _wmoColor(fp.currentWeather!.weatherCode),
+                          size: 52,
                         )
                       else if (wp.weatherData != null)
                         CachedNetworkImage(
@@ -412,140 +496,184 @@ class _WeatherHeroCard extends StatelessWidget {
                   const SizedBox(height: 12),
 
                   // ── Temp + Wind + Humidity row ─────────────────────────
-                  if (wp.weatherData != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF5F7FA),
-                        borderRadius: BorderRadius.circular(35),
-                      ),
-                      child: Row(
-                        children: [
-                          // Temperature
-                          Expanded(
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.thermostat_rounded,
-                                  color: Color(0xFF546E7A),
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 6),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '${wp.weatherData!.currentTemp.round()}°C',
-                                      style: const TextStyle(
-                                        color: Color(0xFF0D1B2A),
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                    const Text(
-                                      'তাপমাত্রা',
-                                      style: TextStyle(
-                                        color: Color(0xFF90A4AE),
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-
+                  if (wp.weatherData != null || useOpenMeteo)
+                    Column(
+                      children: [
+                        // Cache indicator badge
+                        if (showingCache)
                           Container(
-                            width: 1,
-                            height: 28,
-                            color: const Color(0xFFE0E0E0),
-                          ),
-
-                          // Wind
-                          Expanded(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.amber.shade200,
+                                width: 1,
+                              ),
+                            ),
                             child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(
-                                  Icons.air_rounded,
-                                  color: Color(0xFF546E7A),
-                                  size: 20,
+                                Icon(
+                                  Icons.storage_rounded,
+                                  size: 14,
+                                  color: Colors.amber.shade700,
                                 ),
-                                const SizedBox(width: 6),
-                                Flexible(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        '${wp.weatherData!.currentWindSpeed.round()} কিমি/ঘ',
-                                        style: const TextStyle(
-                                          color: Color(0xFF0D1B2A),
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const Text(
-                                        'বাতাস',
-                                        style: TextStyle(
-                                          color: Color(0xFF90A4AE),
-                                          fontSize: 11,
-                                        ),
-                                      ),
-                                    ],
+                                const SizedBox(width: 4),
+                                Text(
+                                  'সংরক্ষিত ডেটা',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.amber.shade900,
                                   ),
                                 ),
                               ],
                             ),
                           ),
 
-                          Container(
-                            width: 1,
-                            height: 28,
-                            color: const Color(0xFFE0E0E0),
+                        // Weather data row
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
                           ),
-
-                          // Humidity
-                          Expanded(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.water_drop_rounded,
-                                  color: Color(0xFF546E7A),
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 6),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF5F7FA),
+                            borderRadius: BorderRadius.circular(35),
+                          ),
+                          child: Row(
+                            children: [
+                              // Temperature
+                              Expanded(
+                                child: Row(
                                   children: [
-                                    Text(
-                                      '${wp.weatherData!.currentHumidity.round()}%',
-                                      style: const TextStyle(
-                                        color: Color(0xFF0D1B2A),
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w700,
-                                      ),
+                                    const Icon(
+                                      Icons.thermostat_rounded,
+                                      color: Color(0xFF546E7A),
+                                      size: 20,
                                     ),
-                                    const Text(
-                                      'আর্দ্রতা',
-                                      style: TextStyle(
-                                        color: Color(0xFF90A4AE),
-                                        fontSize: 11,
+                                    const SizedBox(width: 6),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '${currentTemp.round()}°C',
+                                          style: const TextStyle(
+                                            color: Color(0xFF0D1B2A),
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        const Text(
+                                          'তাপমাত্রা',
+                                          style: TextStyle(
+                                            color: Color(0xFF90A4AE),
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              Container(
+                                width: 1,
+                                height: 28,
+                                color: const Color(0xFFE0E0E0),
+                              ),
+
+                              // Wind
+                              Expanded(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.air_rounded,
+                                      color: Color(0xFF546E7A),
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            '${currentWind.round()} কিমি/ঘ',
+                                            style: const TextStyle(
+                                              color: Color(0xFF0D1B2A),
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const Text(
+                                            'বাতাস',
+                                            style: TextStyle(
+                                              color: Color(0xFF90A4AE),
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
-                              ],
-                            ),
+                              ),
+
+                              Container(
+                                width: 1,
+                                height: 28,
+                                color: const Color(0xFFE0E0E0),
+                              ),
+
+                              // Humidity
+                              Expanded(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.water_drop_rounded,
+                                      color: Color(0xFF546E7A),
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '${currentHumidity.round()}%',
+                                          style: const TextStyle(
+                                            color: Color(0xFF0D1B2A),
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        const Text(
+                                          'আর্দ্রতা',
+                                          style: TextStyle(
+                                            color: Color(0xFF90A4AE),
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
 
                   // Refresh progress bar
@@ -882,87 +1010,158 @@ class _WeatherDetailDialogState extends State<_WeatherDetailDialog>
                     ],
                   ),
                   const SizedBox(height: 16),
-                  // Week forecast
-                  ...wp.weatherData!.daily.map((day) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF5F5F5),
-                          borderRadius: BorderRadius.circular(12),
+                  // Week forecast — AccuWeather (priority) or Open-Meteo (fallback)
+                  ...() {
+                    final wp = context.watch<WeatherProvider>();
+                    final fp = context.watch<ForecastProvider>();
+
+                    // Priority: AccuWeather daily → Open-Meteo forecasts
+                    final useAccuWeather =
+                        !wp.isDemo &&
+                        wp.weatherData?.daily != null &&
+                        wp.weatherData!.daily.isNotEmpty;
+
+                    List<dynamic> days;
+                    if (useAccuWeather) {
+                      days = wp.weatherData!.daily;
+                    } else {
+                      days = fp.forecasts ?? [];
+                    }
+
+                    if (days.isEmpty) {
+                      return [
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          child: Center(
+                            child: Text(
+                              'পূর্বাভাস লোড হচ্ছে…',
+                              style: TextStyle(color: Colors.black45),
+                            ),
+                          ),
                         ),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width: 70,
-                              child: Text(
-                                DateFormat(
-                                  'EEE',
-                                ).format(day.date).substring(0, 3),
+                      ];
+                    }
+
+                    return days.map((day) {
+                      // Handle both AccuWeather DayForecast and Open-Meteo ForecastDay
+                      final date = day is DayForecast ? day.date : day.date;
+                      final tempMax = day is DayForecast
+                          ? day.tempMax
+                          : day.tempMax;
+                      final tempMin = day is DayForecast
+                          ? day.tempMin
+                          : day.tempMin;
+                      final weatherCodeOrIcon = day is DayForecast
+                          ? day.iconCode
+                          : day.weatherCode;
+
+                      IconData icon;
+                      if (day is DayForecast) {
+                        // AccuWeather - use icon code
+                        icon = _getAccuWeatherIcon(day.iconCode);
+                      } else {
+                        // Open-Meteo - use WMO weather code
+                        final code = day.weatherCode as int;
+                        if (code == 0 || code == 1) {
+                          icon = Icons.wb_sunny_rounded;
+                        } else if (code <= 3) {
+                          icon = Icons.wb_cloudy_rounded;
+                        } else if (code <= 48) {
+                          icon = Icons.foggy;
+                        } else if (code <= 67) {
+                          icon = Icons.umbrella_rounded;
+                        } else if (code <= 77) {
+                          icon = Icons.ac_unit_rounded;
+                        } else {
+                          icon = Icons.thunderstorm_rounded;
+                        }
+                      }
+                      final bnDays = {
+                        DateTime.monday: 'সোম',
+                        DateTime.tuesday: 'মঙ্গল',
+                        DateTime.wednesday: 'বুধ',
+                        DateTime.thursday: 'বৃহস্পতি',
+                        DateTime.friday: 'শুক্র',
+                        DateTime.saturday: 'শনি',
+                        DateTime.sunday: 'রবি',
+                      };
+                      final isToday = DateUtils.isSameDay(date, DateTime.now());
+                      final label = isToday
+                          ? 'আজ'
+                          : (bnDays[date.weekday] ?? '');
+
+                      final precipitation = day is DayForecast
+                          ? day.precipitation
+                          : day.precipitation;
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFFE0E7EF)),
+                          ),
+                          child: Row(
+                            children: [
+                              SizedBox(
+                                width: 60,
+                                child: Text(
+                                  label,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: isToday
+                                        ? FontWeight.bold
+                                        : FontWeight.w600,
+                                    color: isToday
+                                        ? const Color(0xFF1565C0)
+                                        : const Color(0xFF0D1B2A),
+                                  ),
+                                ),
+                              ),
+                              Icon(
+                                icon,
+                                size: 28,
+                                color: const Color(0xFF1565C0),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.water_drop,
+                                      size: 12,
+                                      color: Colors.blue.shade300,
+                                    ),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      '${precipitation.toStringAsFixed(1)} mm',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Text(
+                                '${tempMax.round()}° / ${tempMin.round()}°',
                                 style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
                                   color: Color(0xFF0D1B2A),
                                 ),
                               ),
-                            ),
-                            CachedNetworkImage(
-                              imageUrl: day.iconUrl,
-                              width: 40,
-                              height: 40,
-                              errorWidget: (c, u, e) =>
-                                  const Icon(Icons.wb_cloudy, size: 32),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    day.description,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.black54,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.water_drop,
-                                        size: 12,
-                                        color: Colors.blue.shade300,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        '${day.precipitation.round()} mm',
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          color: Colors.black54,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '${day.tempMax.round()}° / ${day.tempMin.round()}°',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF0D1B2A),
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    );
-                  }),
+                      );
+                    }).toList();
+                  }(),
                 ],
               ),
             ),

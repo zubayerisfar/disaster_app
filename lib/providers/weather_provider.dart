@@ -22,6 +22,7 @@ class WeatherProvider extends ChangeNotifier {
   String? _error;
   int _warningLevel = 1;
   bool _fromCache = false;
+  bool _isDemo = true; // Track if showing demo data
   DateTime? _cachedAt;
 
   WeatherProvider() {
@@ -35,18 +36,11 @@ class WeatherProvider extends ChangeNotifier {
   String? get error => _error;
   int get warningLevel => _warningLevel;
   bool get fromCache => _fromCache;
+  bool get isDemo => _isDemo; // Expose demo status
   DateTime? get cachedAt => _cachedAt;
   String get warningDescription =>
       WeatherService.warningDescription(_warningLevel);
   int get warningColor => WeatherService.warningColor(_warningLevel);
-
-  /// For testing only — force a specific warning level without real wind data.
-  void setDebugWarningLevel(int level) {
-    debugPrint('🔧 WeatherProvider: Setting debug warning level to $level');
-    _warningLevel = level;
-    notifyListeners();
-    debugPrint('🔧 WeatherProvider: notifyListeners() called');
-  }
 
   /// Loads demo weather immediately (synchronously via service static method).
   void _loadDemoImmediately() {
@@ -63,33 +57,44 @@ class WeatherProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString(_cacheKey);
       final ts = prefs.getInt(_cacheTimeKey);
-      if (raw == null || ts == null) return;
+
+      if (raw == null || ts == null) {
+        return;
+      }
 
       final cachedAt = DateTime.fromMillisecondsSinceEpoch(ts);
       final age = DateTime.now().difference(cachedAt).inSeconds;
       // Accept cache up to 7 days old (offline safety net)
-      if (age > 7 * 24 * 3600) return;
+      if (age > 7 * 24 * 3600) {
+        return;
+      }
 
-      final data = WeatherData.fromCache(
-        jsonDecode(raw) as Map<String, dynamic>,
-      );
+      final jsonData = jsonDecode(raw) as Map<String, dynamic>;
+      final data = WeatherData.fromCache(jsonData);
       _weatherData = data;
       _warningLevel = WeatherService.calculateWarningLevel(
         data.currentWindSpeed,
       );
       _fromCache = true;
+      _isDemo = data.isDemo; // Respect the isDemo flag from cache
       _cachedAt = cachedAt;
       notifyListeners();
-    } catch (_) {}
+    } catch (e) {
+      // Silent fail - cache not available
+    }
   }
 
   /// Persist current weather data to SharedPreferences.
   Future<void> _saveCache(WeatherData data) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_cacheKey, jsonEncode(data.toCache()));
+      final jsonData = data.toCache();
+      final jsonString = jsonEncode(jsonData);
+      await prefs.setString(_cacheKey, jsonString);
       await prefs.setInt(_cacheTimeKey, DateTime.now().millisecondsSinceEpoch);
-    } catch (_) {}
+    } catch (e) {
+      // Silent fail - cache not available
+    }
   }
 
   /// Fetches real weather for the given [lat]/[lon] and computes warning level.
@@ -103,9 +108,18 @@ class WeatherProvider extends ChangeNotifier {
       _warningLevel = WeatherService.calculateWarningLevel(
         _weatherData!.currentWindSpeed,
       );
-      _fromCache = false;
-      _cachedAt = null;
-      await _saveCache(_weatherData!);
+
+      // Check if returned data is demo - DON'T cache or mark as real if demo!
+      if (_weatherData!.isDemo) {
+        _isDemo = true; // Keep showing demo
+        _fromCache = false;
+      } else {
+        // Real API data - mark as real and cache it
+        _fromCache = false;
+        _isDemo = false; // Real API data
+        _cachedAt = null;
+        await _saveCache(_weatherData!);
+      }
     } catch (e) {
       _error = 'Could not load weather: ${e.toString()}';
       // Keep previously loaded (demo/cached) data visible.

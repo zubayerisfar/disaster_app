@@ -41,7 +41,7 @@ class _ContactsPageState extends State<ContactsPage> {
         padding: EdgeInsets.fromLTRB(
           16,
           MediaQuery.of(context).padding.top +
-              102 +
+              116 +
               16, // top safe area + appbar height + spacing
           16,
           120, // Bottom padding for navigation bar

@@ -87,7 +87,7 @@ class _SettingsPageState extends State<SettingsPage> {
       body: ListView(
         padding: EdgeInsets.fromLTRB(
           16,
-          MediaQuery.of(context).padding.top + 126 + 16,
+          MediaQuery.of(context).padding.top + 116 + 16,
           16,
           140, // Bottom padding for navigation bar
         ),

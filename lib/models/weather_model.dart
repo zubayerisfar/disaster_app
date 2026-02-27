@@ -76,6 +76,7 @@ class WeatherData {
   final String currentDescription;
   final String currentIconCode;
   final List<DayForecast> daily;
+  final bool isDemo; // Track if this is demo data (don't cache!)
 
   const WeatherData({
     required this.currentTemp,
@@ -84,6 +85,7 @@ class WeatherData {
     required this.currentDescription,
     required this.currentIconCode,
     required this.daily,
+    this.isDemo = false,
   });
 
   factory WeatherData.fromJson(Map<String, dynamic> json) {
@@ -99,6 +101,7 @@ class WeatherData {
           (current['weather'] as List).first['description'] as String,
       currentIconCode: (current['weather'] as List).first['icon'] as String,
       daily: dailyList,
+      isDemo: false, // Real API data
     );
   }
 
@@ -110,6 +113,7 @@ class WeatherData {
     'currentDescription': currentDescription,
     'currentIconCode': currentIconCode,
     'daily': daily.map((d) => d.toCache()).toList(),
+    'isDemo': isDemo,
   };
 
   /// Deserialize from local cache storage.
@@ -122,6 +126,9 @@ class WeatherData {
     daily: (m['daily'] as List)
         .map((d) => DayForecast.fromCache(d as Map<String, dynamic>))
         .toList(),
+    isDemo:
+        (m['isDemo'] as bool?) ??
+        false, // Default false for backward compatibility
   );
 
   String get currentIconUrl =>
