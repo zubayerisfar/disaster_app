@@ -63,7 +63,8 @@ IconData _getAccuWeatherIcon(String iconCode) {
 
 class HomePage extends StatefulWidget {
   final VoidCallback? onMenuTap;
-  const HomePage({super.key, this.onMenuTap});
+  final void Function(int)? onNavigate;
+  const HomePage({super.key, this.onMenuTap, this.onNavigate});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -144,6 +145,14 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 14),
             const WomenSafetyCard(),
+            const SizedBox(height: 28),
+            // ── Plant Disease Detection ─────────────────────────────────
+            const _SectionHeader(
+              title: 'ফসলের রোগ নির্ণয়',
+              icon: Icons.agriculture_rounded,
+            ),
+            const SizedBox(height: 14),
+            _PlantDiseasePromoCard(onNavigate: widget.onNavigate),
             const SizedBox(height: 32),
             const _SectionHeader(
               title: 'কাছের আশ্রয়কেন্দ্র',
@@ -1051,9 +1060,6 @@ class _WeatherDetailDialogState extends State<_WeatherDetailDialog>
                       final tempMin = day is DayForecast
                           ? day.tempMin
                           : day.tempMin;
-                      final weatherCodeOrIcon = day is DayForecast
-                          ? day.iconCode
-                          : day.weatherCode;
 
                       IconData icon;
                       if (day is DayForecast) {
@@ -1471,5 +1477,137 @@ class _ContactCallCard extends StatelessWidget {
   Future<void> _dial(String number) async {
     final uri = Uri.parse('tel:$number');
     if (await canLaunchUrl(uri)) await launchUrl(uri);
+  }
+}
+
+// ── Plant Disease Promo Card ──────────────────────────────────────────────────
+
+class _PlantDiseasePromoCard extends StatelessWidget {
+  final void Function(int)? onNavigate;
+  const _PlantDiseasePromoCard({this.onNavigate});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('কৃষক সেবা পেজে যাচ্ছে...'),
+            duration: Duration(milliseconds: 500),
+          ),
+        );
+        onNavigate?.call(7);
+      },
+      borderRadius: BorderRadius.circular(20),
+      child: Ink(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF16A34A), Color(0xFF15803D)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF16A34A).withValues(alpha: 0.3),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.camera_alt_rounded,
+                            color: Colors.white,
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const Flexible(
+                          child: Text(
+                            'আপনার ফসল কি সুস্থ?',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'পাতার ছবি তুলে রোগ শনাক্ত করুন',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white.withValues(alpha: 0.95),
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'এখনই পরীক্ষা করুন',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF16A34A),
+                            ),
+                          ),
+                          SizedBox(width: 6),
+                          Icon(
+                            Icons.arrow_forward_rounded,
+                            color: Color(0xFF16A34A),
+                            size: 18,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 14),
+              Container(
+                width: 90,
+                height: 90,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text('🌿', style: const TextStyle(fontSize: 50)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

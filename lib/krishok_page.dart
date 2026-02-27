@@ -3,6 +3,9 @@ import 'package:provider/provider.dart';
 import 'providers/weather_provider.dart';
 import 'widgets/disaster_app_bar.dart';
 import 'theme.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'services/plant_disease_service.dart';
 
 class KrishokPage extends StatelessWidget {
   final VoidCallback? onMenuTap;
@@ -238,6 +241,22 @@ class KrishokPage extends StatelessWidget {
 
           // ── Crop Alert based on weather ───────────────────────────────
           _CropWeatherAlert(weather: weather),
+          const SizedBox(height: 18),
+
+          // ── Plant Disease Detection (HIGHLIGHTED) ─────────────────────
+          const _PlantDiseaseDetectionSection(),
+          const SizedBox(height: 18),
+
+          // ── Detectable Crops Info ─────────────────────────────────────
+          const _DetectableCropsInfo(),
+          const SizedBox(height: 18),
+
+          // ── Disease Guidelines ────────────────────────────────────────────
+          const _DiseaseGuidelinesSection(),
+          const SizedBox(height: 18),
+
+          // ── Cyclone Signal Guidance ───────────────────────────────────
+          const _CycloneSignalGuidance(),
           const SizedBox(height: 18),
 
           // ── Seasonal Crop Recommendations ─────────────────────────────
@@ -905,3 +924,1056 @@ class _AgriHelplines extends StatelessWidget {
     );
   }
 }
+
+// ── Plant Disease Detection Section ────────────────────────────────────────────
+
+class _PlantDiseaseDetectionSection extends StatefulWidget {
+  const _PlantDiseaseDetectionSection();
+
+  @override
+  State<_PlantDiseaseDetectionSection> createState() =>
+      _PlantDiseaseDetectionSectionState();
+}
+
+class _PlantDiseaseDetectionSectionState
+    extends State<_PlantDiseaseDetectionSection> {
+  final ImagePicker _picker = ImagePicker();
+  File? _selectedImage;
+  PlantDiseaseResult? _result;
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        setState(() {
+          _selectedImage = File(image.path);
+          _result = null;
+          _errorMessage = null;
+        });
+        _analyzeImage();
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'ছবি নির্বাচনে সমস্যা হয়েছে: $e';
+      });
+    }
+  }
+
+  Future<void> _analyzeImage() async {
+    if (_selectedImage == null) return;
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final result = await PlantDiseaseService.predictDisease(_selectedImage!);
+      setState(() {
+        _result = result;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF16A34A).withValues(alpha: 0.08),
+            const Color(0xFF059669).withValues(alpha: 0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF16A34A).withValues(alpha: 0.3),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF16A34A).withValues(alpha: 0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: GlassCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Highlighted header with icon badge
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF16A34A), Color(0xFF059669)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt_rounded,
+                      color: Color(0xFF16A34A),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'রোগ শনাক্তকরণ',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'গাছের পাতার ছবি তুলে রোগ সনাক্ত করুন',
+                          style: TextStyle(fontSize: 12, color: Colors.white70),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // "Featured" badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.star_rounded, color: Colors.white, size: 14),
+                        SizedBox(width: 4),
+                        Text(
+                          'বিশেষ সেবা',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Image selection buttons
+            Row(
+              children: [
+                Expanded(
+                  child: _ImageSourceButton(
+                    icon: Icons.camera_alt_rounded,
+                    label: 'ক্যামেরা',
+                    onTap: () => _pickImage(ImageSource.camera),
+                    color: const Color(0xFF0284C7),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _ImageSourceButton(
+                    icon: Icons.photo_library_rounded,
+                    label: 'গ্যালারি',
+                    onTap: () => _pickImage(ImageSource.gallery),
+                    color: const Color(0xFF16A34A),
+                  ),
+                ),
+              ],
+            ),
+
+            // Selected image preview
+            if (_selectedImage != null) ...[
+              const SizedBox(height: 16),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.file(
+                  _selectedImage!,
+                  height: 200,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ],
+
+            // Loading indicator
+            if (_isLoading) ...[
+              const SizedBox(height: 16),
+              const Center(
+                child: Column(
+                  children: [
+                    CircularProgressIndicator(color: Color(0xFF16A34A)),
+                    SizedBox(height: 8),
+                    Text(
+                      'বিশ্লেষণ করা হচ্ছে...',
+                      style: TextStyle(fontSize: 13, color: Colors.black54),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            // Result display
+            if (_result != null && !_isLoading) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDCFCE7),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFF16A34A).withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.check_circle_rounded,
+                          color: Color(0xFF16A34A),
+                          size: 22,
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'ফলাফল',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF16A34A),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'শনাক্তকৃত রোগ:',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.black54,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _result!.predictedClass,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0D1B2A),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.verified_rounded,
+                                color: Color(0xFF16A34A),
+                                size: 18,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'নির্ভুলতা: ${_result!.confidence.toStringAsFixed(1)}%',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF16A34A),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            // Error message
+            if (_errorMessage != null && !_isLoading) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEE2E2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFFDC2626).withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.error_outline_rounded,
+                      color: Color(0xFFDC2626),
+                      size: 22,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'সমস্যা হয়েছে',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFFDC2626),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _errorMessage!,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ImageSourceButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final Color color;
+
+  const _ImageSourceButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Detectable Crops Info ──────────────────────────────────────────────────────
+
+class _DetectableCropsInfo extends StatelessWidget {
+  const _DetectableCropsInfo();
+
+  static const _detectableCrops = [
+    (
+      name: 'আলু',
+      icon: '🥔',
+      diseases: ['আর্লি ব্লাইট', 'লেট ব্লাইট'],
+      color: Color(0xFFB45309),
+    ),
+    (
+      name: 'টমেটো',
+      icon: '🍅',
+      diseases: ['লেট ব্লাইট', 'হলুদ পাতা কার্ল ভাইরাস'],
+      color: Color(0xFFDC2626),
+    ),
+    (
+      name: 'ভুট্টা',
+      icon: '🌽',
+      diseases: ['সাধারণ মরিচা', 'উত্তর পাতার ব্লাইট'],
+      color: Color(0xFFCA8A04),
+    ),
+    (
+      name: 'মরিচ',
+      icon: '🌶️',
+      diseases: ['ব্যাকটেরিয়াল স্পট'],
+      color: Color(0xFFDC2626),
+    ),
+    (
+      name: 'আপেল',
+      icon: '🍎',
+      diseases: ['কালো পচা', 'সিডার আপেল মরিচা'],
+      color: Color(0xFFDC2626),
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.info_outline_rounded,
+                color: Color(0xFF0284C7),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'যে সব ফসলের রোগ শনাক্ত করা যায়',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0D1B2A),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: _detectableCrops
+                .map(
+                  (crop) => Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: crop.color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: crop.color.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(crop.icon, style: const TextStyle(fontSize: 18)),
+                        const SizedBox(width: 6),
+                        Text(
+                          crop.name,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: crop.color,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Disease Guidelines Section ─────────────────────────────────────────────────
+
+class _DiseaseGuidelinesSection extends StatelessWidget {
+  const _DiseaseGuidelinesSection();
+
+  static const _guidelines = [
+    (
+      disease: 'আর্লি ব্লাইট',
+      crop: 'আলু/টমেটো',
+      symptoms: 'পাতায় বাদামি গোলাকার দাগ, পাতা শুকিয়ে যাওয়া',
+      treatment:
+          'ম্যানকোজেব ছত্রাকনাশক স্প্রে করুন। আক্রান্ত পাতা পুড়িয়ে ফেলুন। জমিতে পানি জমতে দেবেন না।',
+      color: Color(0xFFEA580C),
+    ),
+    (
+      disease: 'লেট ব্লাইট',
+      crop: 'আলু/টমেটো',
+      symptoms: 'পাতায় কালো দাগ, ভেজা ভেজা দাগ, সাদা ছত্রাক',
+      treatment:
+          'কপার অক্সিক্লোরাইড স্প্রে করুন (২ গ্রাম/লিটার)। আক্রান্ত গাছ তুলে পুড়িয়ে ফেলুন। বৃষ্টির পর অবশ্যই স্প্রে করুন।',
+      color: Color(0xFFDC2626),
+    ),
+    (
+      disease: 'হলুদ পাতা কার্ল ভাইরাস',
+      crop: 'টমেটো',
+      symptoms: 'পাতা হলুদ হয়ে কুঁকড়ে যাওয়া, গাছের বৃদ্ধি বন্ধ',
+      treatment:
+          'সাদা মাছি নিয়ন্ত্রণ করুন (ইমিডাক্লোপ্রিড)। আক্রান্ত গাছ তুলে ফেলুন। হলুদ আঠালো ফাঁদ ব্যবহার করুন।',
+      color: Color(0xFFCA8A04),
+    ),
+    (
+      disease: 'সাধারণ মরিচা',
+      crop: 'ভুট্টা',
+      symptoms: 'পাতায় মরিচা রঙের দাগ, পাতার উভয় পাশে',
+      treatment:
+          'ম্যানকোজেব ছত্রাকনাশক (২ গ্রাম/লিটার)। আক্রান্ত পাতা সরিয়ে ফেলুন। প্রতিরোধী জাত চাষ করুন।',
+      color: Color(0xFFF97316),
+    ),
+    (
+      disease: 'ব্যাকটেরিয়াল স্পট',
+      crop: 'মরিচ/টমেটো',
+      symptoms: 'পাতায় ছোট কালো দাগ, পাতা ঝরে পড়া',
+      treatment:
+          'স্ট্রেপ্টোমাইসিন সালফেট স্প্রে করুন। আক্রান্ত অংশ কেটে পুড়িয়ে ফেলুন। বীজ শোধন করে লাগান।',
+      color: Color(0xFF7C2D12),
+    ),
+    (
+      disease: 'কালো পচা',
+      crop: 'আপেল',
+      symptoms: 'ফলে কালো গোলাকার দাগ, পচন শুরু',
+      treatment:
+          'কপার ফাঙ্গিসাইড স্প্রে করুন। আক্রান্ত ফল ও পাতা সরিয়ে ফেলুন। বাগান পরিষ্কার রাখুন।',
+      color: Color(0xFF78350F),
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return ExpansionTile(
+      tilePadding: EdgeInsets.zero,
+      childrenPadding: const EdgeInsets.only(top: 8),
+      title: Row(
+        children: [
+          const Icon(
+            Icons.medical_services_rounded,
+            color: Color(0xFF16A34A),
+            size: 18,
+          ),
+          const SizedBox(width: 8),
+          const Text(
+            'রোগের লক্ষণ ও চিকিৎসা',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0D1B2A),
+            ),
+          ),
+        ],
+      ),
+      children: _guidelines
+          .map(
+            (guide) => Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: guide.color.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: guide.color.withValues(alpha: 0.2)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: guide.color,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          guide.disease,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        guide.crop,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: guide.color,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        size: 16,
+                        color: Colors.black54,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'লক্ষণ: ${guide.symptoms}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.black87,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.medical_information_outlined,
+                        size: 16,
+                        color: Colors.black54,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'চিকিৎসা: ${guide.treatment}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.black87,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          )
+          .toList(),
+    );
+  }
+}
+// ── Cyclone Signal-Based Farmer Guidance ───────────────────────────────────────
+
+class _CycloneSignalGuidance extends StatelessWidget {
+  const _CycloneSignalGuidance();
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDCFCE7),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.warning_amber_rounded,
+                  color: Color(0xFFDC2626),
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ঝড় সংকেত ও করণীয়',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF0D1B2A),
+                      ),
+                    ),
+                    Text(
+                      'প্রতিটি সংকেতে কৃষকের জন্য নির্দেশনা',
+                      style: TextStyle(fontSize: 12, color: Colors.black54),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          ..._signalGuidelines.map((guide) => _SignalGuideCard(guide: guide)),
+        ],
+      ),
+    );
+  }
+}
+
+class _SignalGuideCard extends StatefulWidget {
+  final _SignalGuide guide;
+
+  const _SignalGuideCard({required this.guide});
+
+  @override
+  State<_SignalGuideCard> createState() => _SignalGuideCardState();
+}
+
+class _SignalGuideCardState extends State<_SignalGuideCard> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: widget.guide.color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: widget.guide.color.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            setState(() {
+              _isExpanded = !_isExpanded;
+            });
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: widget.guide.color,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: widget.guide.color.withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          widget.guide.signal,
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.guide.name,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: widget.guide.color,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            widget.guide.windSpeed,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Colors.black54,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      _isExpanded
+                          ? Icons.keyboard_arrow_up_rounded
+                          : Icons.keyboard_arrow_down_rounded,
+                      color: widget.guide.color,
+                      size: 24,
+                    ),
+                  ],
+                ),
+                // Expandable content
+                if (_isExpanded) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(
+                              Icons.agriculture_rounded,
+                              size: 16,
+                              color: Colors.black87,
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              'কৃষকের করণীয়:',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        ...widget.guide.actions.map(
+                          (action) => Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  '• ',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    action,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.black87,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Signal guide data model
+class _SignalGuide {
+  final String signal;
+  final String name;
+  final String windSpeed;
+  final Color color;
+  final List<String> actions;
+
+  const _SignalGuide({
+    required this.signal,
+    required this.name,
+    required this.windSpeed,
+    required this.color,
+    required this.actions,
+  });
+}
+
+// Cyclone warning signals for Bangladesh
+final List<_SignalGuide> _signalGuidelines = [
+  _SignalGuide(
+    signal: '১',
+    name: 'দূরবর্তী সতর্কতা-১',
+    windSpeed: 'বাতাস: ৪০-৫০ কিমি/ঘণ্টা',
+    color: const Color(0xFF059669),
+    actions: [
+      'আবহাওয়া পূর্বাভাস নিয়মিত শুনুন',
+      'জরুরি সরঞ্জাম প্রস্তুত রাখুন',
+      'ফসলের অবস্থা পরীক্ষা করুন',
+    ],
+  ),
+  _SignalGuide(
+    signal: '২',
+    name: 'দূরবর্তী সতর্কতা-২',
+    windSpeed: 'বাতাস: ৫০-৬০ কিমি/ঘণ্টা',
+    color: const Color(0xFF0284C7),
+    actions: [
+      'দুর্বল গাছের ডালপালা কেটে ফেলুন',
+      'সেচ বন্ধ রাখুন',
+      'পশুখাদ্য সংরক্ষণ করুন',
+    ],
+  ),
+  _SignalGuide(
+    signal: '৩',
+    name: 'দূরবর্তী হুঁশিয়ারি-৩',
+    windSpeed: 'বাতাস: ৬০-৮০ কিমি/ঘণ্টা',
+    color: const Color(0xFFEAB308),
+    actions: [
+      'পাকা ফসল দ্রুত সংগ্রহ করুন',
+      'জলাবদ্ধতা নিষ্কাশনের ব্যবস্থা করুন',
+      'মাছ চাষের জাল পরীক্ষা করুন',
+      'গবাদি পশু নিরাপদ স্থানে সরান',
+    ],
+  ),
+  _SignalGuide(
+    signal: '৪',
+    name: 'স্থানীয় সতর্কতা-৪',
+    windSpeed: 'বাতাস: ৮০-৮৯ কিমি/ঘণ্টা',
+    color: const Color(0xFFF59E0B),
+    actions: [
+      'ফসলের মাঠে কাজ বন্ধ রাখুন',
+      'সার ও কীটনাশক সুরক্ষিত রাখুন',
+      'কৃষি যন্ত্রপাতি ঘরে তুলুন',
+      'পুকুরে বাঁধ মজবুত করুন',
+    ],
+  ),
+  _SignalGuide(
+    signal: '৫',
+    name: 'নদীবন্দর সতর্কতা',
+    windSpeed: 'বাতাস: ৪০-৬১ কিমি/ঘণ্টা (নদী)',
+    color: const Color(0xFF7C3AED),
+    actions: [
+      'নদীতীরে চাষাবাদ স্থগিত রাখুন',
+      'বন্যার পূর্বাভাসে সতর্ক থাকুন',
+      'নিচু জমির ফসল সরিয়ে নিন',
+    ],
+  ),
+  _SignalGuide(
+    signal: '৬',
+    name: 'সমুদ্রবন্দর সতর্কতা',
+    windSpeed: 'বাতাস: ৬১-৮৮ কিমি/ঘণ্টা (সমুদ্র)',
+    color: const Color(0xFF2563EB),
+    actions: [
+      'উপকূলীয় এলাকায় চাষ বন্ধ রাখুন',
+      'লবণ পানির প্রভাব থেকে জমি রক্ষা করুন',
+      'ধান ক্ষেতে বাঁধ দিন',
+    ],
+  ),
+  _SignalGuide(
+    signal: '৭',
+    name: 'বিপদ সংকেত-৭',
+    windSpeed: 'বাতাস: ৮৯-১১৭ কিমি/ঘণ্টা',
+    color: const Color(0xFFDC2626),
+    actions: [
+      'সব ধরনের কৃষিকাজ বন্ধ রাখুন',
+      'ফসল রক্ষায় আর্মি রোপা করুন',
+      'জমিতে না যাবেন',
+      'নিরাপদ আশ্রয়ে যান',
+    ],
+  ),
+  _SignalGuide(
+    signal: '৮',
+    name: 'মহাবিপদ সংকেত-৮',
+    windSpeed: 'বাতাস: ১১৮-১৩৩ কিমি/ঘণ্টা',
+    color: const Color(0xFF991B1B),
+    actions: [
+      'শক্ত আশ্রয়ে অবস্থান করুন',
+      'সব কৃষি কার্যক্রম পরিত্যাগ করুন',
+      'ঝড়ের পরে জমির ক্ষতি পরিমাপ করুন',
+    ],
+  ),
+  _SignalGuide(
+    signal: '৯',
+    name: 'মহাবিপদ সংকেত-৯',
+    windSpeed: 'বাতাস: ১৩৪-১৬৬ কিমি/ঘণ্টা',
+    color: const Color(0xFF7F1D1D),
+    actions: [
+      'আশ্রয়কেন্দ্রে অবস্থান করুন',
+      'পরিবারের সদস্যদের একসাথে রাখুন',
+      'জরুরি খাবার ও পানি সাথে রাখুন',
+    ],
+  ),
+  _SignalGuide(
+    signal: '১০',
+    name: 'মহাবিপদ সংকেত-১০',
+    windSpeed: 'বাতাস: >১৬৬ কিমি/ঘণ্টা',
+    color: const Color(0xFF450A0A),
+    actions: [
+      'পাকা আশ্রয়কেন্দ্রেই থাকুন',
+      'বাহিরে একদম যাবেন না',
+      'ঝড় শেষে স্থানীয় প্রশাসনের নির্দেশ মেনে চলুন',
+    ],
+  ),
+];

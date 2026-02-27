@@ -63,7 +63,7 @@ class _SplashScreenState extends State<SplashScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Icon with subtle shadow
+                // App icon from assets
                 Container(
                   width: 120,
                   height: 120,
@@ -71,8 +71,8 @@ class _SplashScreenState extends State<SplashScreen>
                     borderRadius: BorderRadius.circular(28),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        blurRadius: 24,
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),
                     ],
@@ -88,21 +88,21 @@ class _SplashScreenState extends State<SplashScreen>
                 const SizedBox(height: 28),
                 // App name
                 const Text(
-                  'দুর্যোগ সেবা',
+                  'প্রান্তিক',
                   style: TextStyle(
                     color: Color(0xFF1565C0),
-                    fontSize: 30,
+                    fontSize: 34,
                     fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
+                    letterSpacing: 1.5,
                   ),
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'দুর্যোগ ব্যবস্থাপনা ও উদ্ধার সেবা',
+                  'দুর্যোগ • নারী • কৃষক সেবা',
                   style: TextStyle(
                     color: Color(0xFF5B8DB8),
                     fontSize: 15,
-                    letterSpacing: 0.4,
+                    letterSpacing: 0.5,
                   ),
                 ),
                 const SizedBox(height: 56),

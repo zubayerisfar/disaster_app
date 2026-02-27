@@ -172,7 +172,9 @@ class _MainScaffoldState extends State<MainScaffold> {
   void initState() {
     super.initState();
     _pages = [
-      RepaintBoundary(child: HomePage(onMenuTap: _openDrawer)),
+      RepaintBoundary(
+        child: HomePage(onMenuTap: _openDrawer, onNavigate: _onNavigate),
+      ),
       RepaintBoundary(child: ShelterPage(onMenuTap: _openDrawer)),
       RepaintBoundary(child: ContactsPage(onMenuTap: _openDrawer)),
       RepaintBoundary(child: GuidelinesPage(onMenuTap: _openDrawer)),

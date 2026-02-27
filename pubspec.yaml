@@ -19,6 +19,7 @@ dependencies:
 
   # Networking
   http: ^1.2.2
+  http_parser: ^4.0.2
 
   # State Management
   provider: ^6.1.2
@@ -57,6 +58,7 @@ dependencies:
   video_player: ^2.9.3
   audioplayers: ^6.1.0
   path_provider: ^2.1.5
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:

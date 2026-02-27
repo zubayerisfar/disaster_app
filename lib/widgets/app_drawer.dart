@@ -100,7 +100,7 @@ class _AppDrawerState extends State<AppDrawer> {
                 Text(
                   _familyInfo?.headOfFamilyName?.isNotEmpty == true
                       ? _familyInfo!.headOfFamilyName!
-                      : 'দুর্যোগ সেবা',
+                      : 'প্রান্তিক',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 20,
@@ -111,7 +111,7 @@ class _AppDrawerState extends State<AppDrawer> {
                 Text(
                   _familyInfo?.phoneNumber?.isNotEmpty == true
                       ? _familyInfo!.phoneNumber!
-                      : 'Bangladesh Disaster Management',
+                      : 'দুর্যোগ • নারী • কৃষক সেবা',
                   style: const TextStyle(color: Colors.white70, fontSize: 12),
                 ),
               ],

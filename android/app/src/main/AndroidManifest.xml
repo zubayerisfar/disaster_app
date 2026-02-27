@@ -19,7 +19,7 @@
     <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
 
     <application
-        android:label="দুর্যোগ সেবা"
+        android:label="প্রান্তিক"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
